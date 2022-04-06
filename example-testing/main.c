@@ -180,7 +180,7 @@ int count2 = 0;
 void sitOnSofa(void *arg){
 
 
-   /** updates number of people on sofa*//
+   /** updates number of people on sofa*/
     num_of_poeple_sofa++;
 
     /** sets up passed struct*/
@@ -192,7 +192,7 @@ void sitOnSofa(void *arg){
     /** get thread id*/
     pid_t tid = gettid();
 
-    /** printf needs to be made into 1 statment *//
+    /** printf needs to be made into 1 statment */
     printf("(Thread ID: %d", (tid));
     printf("): Sitting on a sofa in the waiting room \n", (tid));
 
