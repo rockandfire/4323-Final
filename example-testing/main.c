@@ -24,7 +24,7 @@ int count = 0;
 int doctors_waiting = 0;
 int num_of_doc_in_check =0;
 int check_up_time = 0;
-
+struct input inputs;
 
 pthread_cond_t notifyMain;
 pthread_mutex_t lockMain;
@@ -38,7 +38,7 @@ int main(int argc, char **argv){
     inputs.wait_room_cap = 6;
     inputs.num_of_sofa = 3;
     inputs.max_arr_time = 10;
-    inputs.pat_check_time = 1000;
+    inputs.pat_check_time = 100;
 
 
 
@@ -305,6 +305,8 @@ void perfromMedicalCheckup(void *arg){
     else{
 
     }
+
+    usleep(inputs.pat_check_time*1000);
 
     /**unlocks and locks back to keep next function safe*/
     pthread_mutex_unlock(&lock5);
