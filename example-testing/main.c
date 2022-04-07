@@ -3,9 +3,11 @@
 #include <unistd.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <semaphore.h>
+
 #include "threadpool.h"
 
-
+sem_t sem;
 
 int num_of_poeple_waiting = 0;
 int num_of_poeple_sofa = 0;
@@ -14,6 +16,9 @@ int check_up_time = 0;
 int MainDone = 0;
 
 int main(int argc, char **argv){
+
+    /** semaphore init*/
+    sem_init(&sem, 0, 1);
 
     /** struct to handle inputs*/
     if (argc == 7){
@@ -107,7 +112,9 @@ void leaving_no_checkUp(void *arg){
     if(num_of_poeple_waiting >inputs.wait_room_cap){
         /** gets thread id*/
         pid_t tid = gettid();
+        sem_wait(&sem);
         printf("Patient %d (Thread ID: %d): Leaving the clinic without checkup \n",persons1->num - inputs.num_of_med_prof, tid);
+        sem_post(&sem);
         }
     else{
         enterWaitingRoom(persons1);
@@ -212,11 +219,13 @@ void getMedicalCheckup(void *arg){
     if(persons1->num < persons1->num_of_doctor){
         pthread_cond_signal(&notify2);
         pid_t tid = gettid();
+        sem_wait(&sem);
         printf("Medical Professional  %d (Thread ID: %d): Checking Patient ", (persons1->num), tid);
     }
     /** if your not a a doctor come here*/
     else{
         printf(" %d \n", (persons1->num-persons1->num_of_doctor));
+        sem_post(&sem);
     }
 
     /**unlocks and locks back to keep next function safe*/
