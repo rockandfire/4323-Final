@@ -32,10 +32,10 @@ int main(int argc, char **argv){
         inputs.pat_check_time   = atoi(argv[6]);
     }
     else{
-        inputs.num_of_med_prof = 2;
+        inputs.num_of_med_prof = 4;
         inputs.num_of_pat = 50;
-        inputs.wait_room_cap = 3;
-        inputs.num_of_sofa = 2;
+        inputs.wait_room_cap = 6;
+        inputs.num_of_sofa = 3;
         inputs.max_arr_time = 10;
         inputs.pat_check_time = 100;
     }
@@ -85,9 +85,9 @@ int main(int argc, char **argv){
     }
 
     MainDone = 1;
-    sleep(1);
+    usleep(150*1000);
     pthread_cond_broadcast(&notify3);
-    usleep(10);
+    usleep(inputs.max_arr_time*1000);
     printf("Done, now ending\n");
 
     /** FREES pool*/
@@ -103,12 +103,12 @@ void leaving_no_checkUp(void *arg){
 
     /** sets up passed struct*/
     struct person *persons1 = (struct person*)arg;
-
+    sem_wait(&sem);
     printf("Patient %d (Thread ID: %d): Arriving the clinic \n",persons1->num - inputs.num_of_med_prof, tid);
-
+    sem_post(&sem);
     /**maximum arrival interval*/
     usleep(inputs.max_arr_time*1000);
-
+    printf("people wait: %d\n", num_of_poeple_waiting);
     if(num_of_poeple_waiting >inputs.wait_room_cap){
         /** gets thread id*/
         pid_t tid = gettid();
@@ -132,7 +132,7 @@ void enterWaitingRoom(void *arg){
     printf("Patient %d (Thread ID: %d): Arriving the clinic\n", (persons1->num-persons1->num_of_doctor),tid);
 
     /**locks function*/
-    pthread_mutex_lock(&lock1);
+    //pthread_mutex_lock(&lock1);
 
     /**while there is no room on sofa wait until notified*/
     while(num_of_poeple_sofa >= persons1->num_of_sofa){
@@ -143,7 +143,7 @@ void enterWaitingRoom(void *arg){
     pthread_cond_broadcast(&notify1);
 
     /** unlock function*/
-    pthread_mutex_unlock(&lock1);
+   // pthread_mutex_unlock(&lock1);
 
     /** go to next function*/
     sitOnSofa(persons1);
@@ -183,29 +183,26 @@ void sitOnSofa(void *arg){
 void ForPatients(void *arg){
 
     /** locks func*/
-     pthread_mutex_lock(&lock3);
+     //pthread_mutex_lock(&lock3);
 
     /** makes passed struct printf needs to be one line*/
     struct person *persons1 = (struct person*)arg;
     pid_t tid = gettid();
     printf("Medical Professional  %d (Thread ID: %d): Waiting for patient  \n", (persons1->num), tid );
-
+    //usleep(inputs.max_arr_time*1000);// take out================================================================================================================
     /** waits for pat*/
     if(num_of_poeple_sofa==0){
+        printf("waiting");
         pthread_cond_wait(&notify3 ,&lock3);
 
-        if(MainDone == 1){
-            pthread_mutex_unlock(&lock3);
-            //docleave(persons1);
-        }
     }
     if(MainDone != 1){
         /** unlocks and updates vars*/
-        pthread_mutex_unlock(&lock3);
+        //pthread_mutex_unlock(&lock3);
 
         getMedicalCheckup(persons1);
     }
-    pthread_mutex_unlock(&lock3);
+    //pthread_mutex_unlock(&lock3);
 }
 
 void getMedicalCheckup(void *arg){
@@ -323,7 +320,9 @@ void leaveClinic(void *arg){
     /** if pat enter*/
     if(persons1->num > persons1->num_of_doctor-1){
         pthread_cond_wait(&notify6 ,&lock7);
+        sem_wait(&sem);
         printf("Patient %d Leaving the clinic after receiving checkup\n", (persons1->num-persons1->num_of_doctor));
+        sem_post(&sem);
         }
     else{
         /** doctor go back to start*/
