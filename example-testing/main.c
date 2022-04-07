@@ -2,7 +2,10 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <assert.h>
+#include <stdlib.h>
 #include "threadpool.h"
+
+
 
 int num_of_poeple_waiting = 0;
 int num_of_poeple_sofa = 0;
@@ -186,7 +189,7 @@ void ForPatients(void *arg){
 
         if(MainDone == 1){
             pthread_mutex_unlock(&lock3);
-            docleave(persons1);
+            //docleave(persons1);
         }
     }
     if(MainDone != 1){
@@ -197,9 +200,7 @@ void ForPatients(void *arg){
     }
     pthread_mutex_unlock(&lock3);
 }
-void docleave(void *arg){
 
-}
 void getMedicalCheckup(void *arg){
 
     /** locks */
