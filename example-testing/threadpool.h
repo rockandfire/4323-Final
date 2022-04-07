@@ -73,7 +73,7 @@ struct threadpool_t {
   int count;
 };
 
-void threadpool_thread(void *threadpool);
+void* threadpool_thread(void *threadpool);
 struct threadpool_t *threadpool_create(int thread_count, int queue_size);
 int threadpool_add(threadpool_t *pool, void (*routine)(void *),struct person *persons1);
 int threadpool_destroy(threadpool_t *pool);
