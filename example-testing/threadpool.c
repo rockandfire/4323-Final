@@ -9,7 +9,7 @@
 #include "threadpool.h"
 
 struct threadpool_t *threadpool_create(int thread_count, int queue_size){
-    threadpool_t *pool;
+    struct threadpool_t *pool;
 
     pool = (threadpool_t *)malloc(sizeof(threadpool_t));
 
@@ -21,7 +21,7 @@ struct threadpool_t *threadpool_create(int thread_count, int queue_size){
     pool->queue = (threadpool_task_t *)malloc(sizeof(threadpool_task_t) * queue_size);
 
     for(int i = 0; i < thread_count; i++) {
-        if(pthread_create(&(pool->threads[i]), NULL, threadpool_thread, (void*)pool) != 0) {
+        if(pthread_create(&(pool->threads[i]), NULL, threadpool_thread, (void*) pool) != 0) {
             threadpool_destroy(pool);
             return NULL;
         }
@@ -56,7 +56,7 @@ int threadpool_destroy(threadpool_t *pool){
 }
 
 
-void threadpool_thread(void *threadpool)
+void* threadpool_thread(void *threadpool)
 {
     threadpool_t *pool = (threadpool_t *)threadpool;
     threadpool_task_t task;
