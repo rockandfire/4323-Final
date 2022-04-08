@@ -109,8 +109,8 @@ void leaving_no_checkUp(void *arg){
 
     /**maximum arrival interval*/
     usleep(inputs.max_arr_time*1000);
-    printf("people wait: %d\n", num_of_poeple_waiting);
-    if(num_of_poeple_waiting == inputs.wait_room_cap){
+    //printf("people wait: %d\n", num_of_poeple_waiting);
+    if(num_of_poeple_waiting >= inputs.wait_room_cap){
 
         /** gets thread id*/
         pid_t tid = gettid();
@@ -197,7 +197,7 @@ void ForPatients(void *arg){
     //usleep(inputs.max_arr_time*1000);// take out================================================================================================================
     /** waits for pat*/
     if(num_of_poeple_sofa==0){
-        printf("waiting");
+        //printf("waiting");
         pthread_cond_wait(&notify3 ,&lock3);
 
     }
@@ -250,7 +250,6 @@ void perfromMedicalCheckup(void *arg){
     }
 
     usleep(inputs.pat_check_time*1000);
-
     /**unlocks and locks back to keep next function safe*/
    // pthread_mutex_unlock(&lock5);
     pthread_mutex_lock(&lock6);
@@ -288,6 +287,10 @@ void makePayment(void *arg){
      pthread_mutex_lock(&lock7);
     acceptPayment(persons1);
 }
+// add sphomore here
+
+pthread_mutex_t lock7;
+pthread_cond_t notify8;
 
 void acceptPayment(void *arg){
 
@@ -297,8 +300,8 @@ void acceptPayment(void *arg){
     if(persons1->num > persons1->num_of_doctor-1){
 
         pid_t tid = gettid();
-         pthread_cond_wait(&notify7 ,&lock7);
-
+         pthread_cond_wait(&notify8 ,&lock7);
+        sem_wait(&sem);
         printf("Patient %d (Thread ID: %d ): Accepting Payment from Patient ", (persons1->num-persons1->num_of_doctor), tid);
 
         /** notify next print*/
@@ -306,11 +309,13 @@ void acceptPayment(void *arg){
     }
     else{
         /** wait to print*/
+        pthread_cond_signal(&notify8);
         pthread_cond_wait(&notify5 ,&lock7);
         printf(" %d \n", (persons1->num));
 
         /** notify next print*/
         pthread_cond_signal(&notify6);
+        sem_post(&sem);
     }
 
     pthread_mutex_unlock(&lock7);
