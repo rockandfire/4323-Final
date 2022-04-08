@@ -8,6 +8,7 @@
 #include "threadpool.h"
 
 sem_t sem;
+sem_t sem2;
 
 int num_of_poeple_waiting = 0;
 int num_of_poeple_sofa = 0;
@@ -19,6 +20,7 @@ int main(int argc, char **argv){
 
     /** semaphore init*/
     sem_init(&sem, 0, 1);
+    sem_init(&sem2, 0, 2);
 
     /** struct to handle inputs*/
     if (argc == 7){
@@ -34,7 +36,7 @@ int main(int argc, char **argv){
     else{
         inputs.num_of_med_prof = 4;
         inputs.num_of_pat = 50;
-        inputs.wait_room_cap = 4;
+        inputs.wait_room_cap = 8;
         inputs.num_of_sofa = 3;
         inputs.max_arr_time = 10;
         inputs.pat_check_time = 100;
@@ -103,9 +105,9 @@ void leaving_no_checkUp(void *arg){
 
     /** sets up passed struct*/
     struct person *persons1 = (struct person*)arg;
-    //sem_wait(&sem);
+    sem_wait(&sem);
     printf("Patient %d (Thread ID: %d): Arriving the clinic \n",persons1->num - inputs.num_of_med_prof, tid);
-    //sem_post(&sem);
+    sem_post(&sem);
 
     /**maximum arrival interval*/
     usleep(inputs.max_arr_time*1000);
@@ -114,12 +116,10 @@ void leaving_no_checkUp(void *arg){
 
         /** gets thread id*/
         pid_t tid = gettid();
-        //sem_wait(&sem);
+        sem_wait(&sem);
         printf("Patient %d (Thread ID: %d): Leaving the clinic without checkup \n",persons1->num - inputs.num_of_med_prof, tid);
-        //while(1){
-        //printf("\n");
-        //}
-        //sem_post(&sem);
+        sem_post(&sem);
+            while(1){}
         }
     else{
         enterWaitingRoom(persons1);
@@ -193,7 +193,7 @@ void ForPatients(void *arg){
     /** makes passed struct printf needs to be one line*/
     struct person *persons1 = (struct person*)arg;
     pid_t tid = gettid();
-    printf("Medical Professional  %d (Thread ID: %d): Waiting for patient  \n", (persons1->num), tid );
+    printf("Medical Professional %d (Thread ID: %d): Waiting for patient  \n", (persons1->num), tid );
     //usleep(inputs.max_arr_time*1000);// take out================================================================================================================
     /** waits for pat*/
     if(num_of_poeple_sofa==0){
@@ -210,6 +210,11 @@ void ForPatients(void *arg){
     pthread_mutex_unlock(&lock3);
 }
 
+int workAroundRealDocNumber3 = 0;
+int workAroundRealpatNumber3 = 55;
+//int tid2 = 0;
+pid_t tid3;
+
 void getMedicalCheckup(void *arg){
 
     /** locks */
@@ -220,13 +225,16 @@ void getMedicalCheckup(void *arg){
     /** if your a doctor enter if loop*/
     if(persons1->num < persons1->num_of_doctor){
         pthread_cond_signal(&notify2);
-        pid_t tid = gettid();
+        tid3 = gettid();
         sem_wait(&sem);
-        printf("Medical Professional  %d (Thread ID: %d): Checking Patient ", (persons1->num), tid);
+        //printf("Medical Professional %d (Thread ID: %d): Checking Patient ", (persons1->num), tid);
+        workAroundRealDocNumber3 = persons1->num;
     }
     /** if your not a a doctor come here*/
     else{
-        printf(" %d \n", (persons1->num-persons1->num_of_doctor));
+        workAroundRealpatNumber3 = persons1->num-persons1->num_of_doctor;
+        //printf(" %d \n", (persons1->num-persons1->num_of_doctor));
+        printf("Medical Professional %d (Thread ID: %d): Checking Patient %d \n", (workAroundRealDocNumber3), tid3, workAroundRealpatNumber3);
         sem_post(&sem);
     }
 
@@ -243,7 +251,7 @@ void perfromMedicalCheckup(void *arg){
     /** if your a patient enter if loop*/
     if(persons1->num > persons1->num_of_doctor-1){
         pid_t tid = gettid();
-        printf("Patient %d (Thread ID: %d ):  Getting checkup \n", (persons1->num-persons1->num_of_doctor), tid);
+        printf("Patient %d (Thread ID: %d):  Getting checkup \n", (persons1->num-persons1->num_of_doctor), tid);
     }
     else{
 
@@ -252,38 +260,54 @@ void perfromMedicalCheckup(void *arg){
     usleep(inputs.pat_check_time*1000);
     /**unlocks and locks back to keep next function safe*/
    // pthread_mutex_unlock(&lock5);
-    pthread_mutex_lock(&lock6);
+    //pthread_mutex_lock(&lock6);
     makePayment(persons1);
 }
+
+int workAroundRealDocNumber2 = 0;
+int workAroundRealpatNumber2 = 55;
+//int tid2 = 0;
+pid_t tid2;
+int dochere = 0;
+
+pthread_mutex_t lock7;
+pthread_cond_t notify9;
 
 void makePayment(void *arg){
 
     struct person *persons1 = (struct person*)arg;
-
+    sem_wait(&sem2);
     /** if your a patienit enter if loop*/
-    if(persons1->num > persons1->num_of_doctor-1){
+    if(persons1->num > persons1->num_of_doctor){
 
-        pid_t tid = gettid();
 
-        printf("Patient %d (Thread ID: %d ): Making Payment to Medical Professional ", (persons1->num-persons1->num_of_doctor), tid);
 
+        //printf("Patient %d (Thread ID: %d ): Making Payment to Medical Professional ", (persons1->num-persons1->num_of_doctor), tid);
+        workAroundRealpatNumber2 = persons1->num-persons1->num_of_doctor;
         /** nofity doc to print*/
         pthread_cond_signal(&notify4);
+        tid2 = gettid();
+
+        pthread_mutex_unlock(&lock7);
 
     }
     /** if your a doctor enter here*/
     else{
         /** wait for pat to tell you to print so you dont print before them*/
-        pthread_cond_wait(&notify4 ,&lock6);
-
-        printf(" %d \n", (persons1->num));
-
+       // pthread_cond_wait(&notify4 ,&lock6);
+        workAroundRealDocNumber2=persons1->num;
+        //printf(" %d \n", (persons1->num));
+        while(workAroundRealpatNumber2==0){}
+        printf("Patient %d (Thread ID: %d): Making Payment to Medical Professional %d \n", (workAroundRealpatNumber2), tid2, workAroundRealDocNumber2);
+        workAroundRealpatNumber2 = 55;
         /** signal next print out that its okay to print*/
         pthread_cond_signal(&notify7);
-    }
+         pthread_cond_signal(&notify9);
 
+    }
+      sem_post(&sem2);
     /**unlocks and locks back to keep next function safe*/
-    pthread_mutex_unlock(&lock6);
+    //pthread_mutex_unlock(&lock6);
      pthread_mutex_lock(&lock7);
     acceptPayment(persons1);
 }
@@ -291,6 +315,10 @@ void makePayment(void *arg){
 
 pthread_mutex_t lock7;
 pthread_cond_t notify8;
+
+int workAroundRealDocNumber = 0;
+int workAroundRealpatNumber = 0;
+int tid1 = 0;
 
 void acceptPayment(void *arg){
 
@@ -300,19 +328,21 @@ void acceptPayment(void *arg){
     if(persons1->num > persons1->num_of_doctor-1){
 
         pid_t tid = gettid();
+        tid1 = tid;
          pthread_cond_wait(&notify8 ,&lock7);
         sem_wait(&sem);
-        printf("Patient %d (Thread ID: %d ): Accepting Payment from Patient ", (persons1->num-persons1->num_of_doctor), tid);
-
+        //printf("Medical Professional %d (Thread ID: %d ): Accepting Payment from Patient ", (persons1->num-persons1->num_of_doctor), tid); work aroundddddddddddddddddddddddddddd
         /** notify next print*/
+        workAroundRealpatNumber = persons1->num-persons1->num_of_doctor;
         pthread_cond_signal(&notify5);
     }
     else{
         /** wait to print*/
         pthread_cond_signal(&notify8);
         pthread_cond_wait(&notify5 ,&lock7);
-        printf(" %d \n", (persons1->num));
-
+        //printf(" %d \n", (persons1->num)); work aroundddddddddddddddddddddddddddd
+        workAroundRealDocNumber=persons1->num;
+        printf("Medical Professional %d (Thread ID: %d): Accepting Payment from Patient %d \n", (workAroundRealDocNumber), tid1, workAroundRealpatNumber);
         /** notify next print*/
         pthread_cond_signal(&notify6);
         sem_post(&sem);
