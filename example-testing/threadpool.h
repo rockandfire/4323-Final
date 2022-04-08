@@ -30,7 +30,7 @@ struct person{
     int num_of_sofa;
     int paired_tid;
     int pat_num;
-    int doc_num;
+    int seeing_doc_num;
 
 };
 
