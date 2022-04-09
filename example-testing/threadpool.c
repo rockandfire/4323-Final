@@ -8,21 +8,27 @@
 
 #include "threadpool.h"
 
-struct threadpool_t *threadpool_create(int thread_count, int queue_size){
-    struct threadpool_t *pool;
 
-    pool = (threadpool_t *)malloc(sizeof(threadpool_t));
+/** makes the pool*/
+struct threadpool_struct *make_threadpool(int num_of_threads, int size_of_queue){
 
-    pool->queue_size = queue_size;
-    pool->head = 0;
-    pool->tail = 0;
-    pool->count = 0;
-    pool->threads = (pthread_t *)malloc(sizeof(pthread_t) * thread_count);
-    pool->queue = (threadpool_task_t *)malloc(sizeof(threadpool_task_t) * queue_size);
+    struct threadpool_struct *pool;
 
-    for(int i = 0; i < thread_count; i++) {
+    /**mallocs the pool*/
+    pool = (threadpool_struct *)malloc(sizeof(threadpool_struct));
+
+    /** init pool*/
+    pool->size_of_queue = size_of_queue;
+    pool->first = 0;
+    pool->last = 0;
+    pool->counter = 0;
+    pool->threads = (pthread_t *)malloc(sizeof(pthread_t) * num_of_threads);
+    pool->queue = (threadpool_jobs *)malloc(sizeof(threadpool_jobs) * size_of_queue);
+
+    /**creates threads in the pool*/
+    for(int i = 0; i < num_of_threads; i++) {
         if(pthread_create(&(pool->threads[i]), NULL, threadpool_thread, (void*) pool) != 0) {
-            threadpool_destroy(pool);
+            free_threadpool(pool);
             return NULL;
         }
     }
@@ -30,52 +36,64 @@ struct threadpool_t *threadpool_create(int thread_count, int queue_size){
     return pool;
 }
 
-int threadpool_add(threadpool_t *pool1, void (*function)(void *),struct person *persons1){
-    struct threadpool_t *pool = (struct threadpool_t*)pool1;
+/**adds jobs to the pool*/
+int threadpool_add_job(threadpool_struct *pool1, void (*function)(void *),struct person *persons1){
 
-    int next;
-    next = pool->tail + 1;
-    next = (next == pool->queue_size) ? 0 : next;
+    struct threadpool_struct *pool = (struct threadpool_struct*)pool1;
 
-    pool->queue[pool->tail].function = function;
-    pool->queue[pool->tail].argument = persons1;
+    int counter1;
+    counter1 = pool->last + 1;
 
-    pool->tail = next;
-    pool->count += 1;
+    /**for keeping track of last*/
+    if(counter1 == pool->size_of_queue){
+        counter1 = 0;
+    }
+
+    /** adds functions and args to threads*/
+    pool->queue[pool->last].function = function;
+    pool->queue[pool->last].args = persons1;
+
+    pool->last = counter1;
+    pool->counter += 1;
 
     pthread_cond_signal(&(pool->notify));
-
-
 
     return 0;
 }
 
-int threadpool_destroy(threadpool_t *pool){
+/**frees pool*/
+int free_threadpool(threadpool_struct *pool){
     free(pool);
     return 0;
 }
 
+/**function for threads and inside this the threads start*/
+void* threadpool_thread(void *threadpool){
 
-void* threadpool_thread(void *threadpool)
-{
-    threadpool_t *pool = (threadpool_t *)threadpool;
-    threadpool_task_t task;
+
+    threadpool_struct *pool = (threadpool_struct *)threadpool;
+    threadpool_jobs jobs;
 
     while(1) {
 
-        while((pool->count == 0) ) {
+        while((pool->counter == 0) ) {
             pthread_cond_wait(&(pool->notify), &(pool->lock));
         }
 
-        task.function = pool->queue[pool->head].function;
-        task.argument = pool->queue[pool->head].argument;
+        /**adds function and args*/
+        jobs.function = pool->queue[pool->first].function;
+        jobs.args = pool->queue[pool->first].args;
 
-        pool->head += 1;
-        pool->head = (pool->head == pool->queue_size) ? 0 : pool->head;
-        pool->count -= 1;
+        pool->first += 1;
+
+        if(pool->first == pool->size_of_queue){
+            pool->first = 0;
+        }
+
+        pool->counter -= 1;
 
         pthread_mutex_unlock(&(pool->lock));
 
-        (*(task.function))(task.argument);
+        (*(jobs.function))(jobs.args);
     }
 }
