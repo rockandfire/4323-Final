@@ -1,6 +1,6 @@
 #ifndef _THREADPOOL_H_
 #define _THREADPOOL_H_
-
+#include <semaphore.h>
 
 typedef struct threadpool_struct threadpool_struct;
 
@@ -22,6 +22,13 @@ pthread_cond_t notify5;
 pthread_cond_t notify6;
 pthread_cond_t notify7;
 
+sem_t sem;
+sem_t sem2;
+sem_t sem3;
+sem_t sem4;
+sem_t sem5;
+sem_t waiting;
+
 struct person{
     int num;
     int done;
@@ -31,7 +38,8 @@ struct person{
     int paired_tid;
     int pat_num;
     int seeing_doc_num;
-
+    int made_it_through;
+    struct timeval stop, start;
 };
 
 typedef struct {
@@ -40,7 +48,7 @@ typedef struct {
 } threadpool_jobs;
 
 
-void ForPatients(void *arg);
+void WaitForPatients(void *arg);
 void enterWaitingRoom(void *arg);
 void sitOnSofa(void *arg);
 void getMedicalCheckup(void *arg);
