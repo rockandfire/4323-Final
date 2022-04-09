@@ -12,6 +12,8 @@ sem_t sem2;
 sem_t sem3;
 sem_t sem4;
 
+sem_t waiting;
+
 int num_of_poeple_waiting = 0;
 int num_of_poeple_sofa = 0;
 int count = 0;
@@ -27,6 +29,8 @@ int main(int argc, char **argv){
     sem_init(&sem3, 0, 1);
     sem_init(&sem4, 0, 1);
 
+    sem_init(&waiting, 0, 1);
+
     /** struct to handle inputs*/
     if (argc == 7){
         //printf("Not enough args exiting");
@@ -39,9 +43,9 @@ int main(int argc, char **argv){
         inputs.pat_check_time   = atoi(argv[6]);
     }
     else{
-        inputs.num_of_med_prof = 4;
+        inputs.num_of_med_prof = 2;
         inputs.num_of_pat = 50;
-        inputs.wait_room_cap = 8;
+        inputs.wait_room_cap = 5;
         inputs.num_of_sofa = 3;
         inputs.max_arr_time = 10;
         inputs.pat_check_time = 100;
@@ -65,9 +69,9 @@ int main(int argc, char **argv){
     pthread_mutex_init(&lock, NULL);
 
     /** thread pool struct creation
-    Args: thread size, queue size(not used) and flags(not used)*/
+    Args: thread size, queue size(not used) */
     struct threadpool_t *pool1;
-    assert((pool1 = threadpool_create(inputs.num_of_med_prof+inputs.wait_room_cap+5, inputs.num_of_pat-1)) != NULL);
+    assert((pool1 = threadpool_create(inputs.num_of_pat+inputs.num_of_med_prof+2, inputs.num_of_pat = 50)) != NULL);
 
     /** add the doctors to the main functions
     args: pool struct, function, and the struct for the thread to be passed to keep track of vars*/
@@ -76,8 +80,16 @@ int main(int argc, char **argv){
         count++;
     }
 
+    struct timeval stop, start;
+
+
+
+
     /** while less then 100 pat have went through the hospital
     needs to be changed to input struct pat size */
+
+    gettimeofday(&start, NULL);
+
     while(count <= inputs.num_of_pat + inputs.num_of_med_prof){
 
         /** delay counter for people coming and waiting at door */
@@ -88,14 +100,22 @@ int main(int argc, char **argv){
         count++;
         }
 
+    //printf("jkhdaskjhdkajshjkdsa %d\n", num_of_poeple_waiting);
+    //printf("\n");
+
+
     while(num_of_poeple_sofa != 0 && count != inputs.num_of_pat + inputs.num_of_med_prof){
     }
+
+    gettimeofday(&stop, NULL);
 
     MainDone = 1;
     usleep(150*1000);
     pthread_cond_broadcast(&notify3);
     usleep(inputs.max_arr_time*1000);
     printf("Done, now ending\n");
+
+    printf("Total Time in Hos %lu s\n", ((stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec));
 
     /** FREES pool*/
     assert(threadpool_destroy(pool1) == 0);
@@ -106,27 +126,38 @@ int main(int argc, char **argv){
 pid_t tid10;
 
 void leaving_no_checkUp(void *arg){
+    //struct person *persons1 = (struct person*)arg;
+    //printf("jkhdaskjhdkajshjkdsa %d\n", persons1->num - inputs.num_of_med_prof);
+    //printf("\n");
+
 
     /** gets thread id*/
     tid10 = gettid();
 
     /** sets up passed struct*/
     struct person *persons1 = (struct person*)arg;
-    sem_wait(&sem);
+    //sem_wait(&sem);
     printf("Patient %d (Thread ID: %d): Arriving the clinic \n",persons1->num - inputs.num_of_med_prof, tid10);
-    sem_post(&sem);
+    //sem_post(&sem);
 
     /**maximum arrival interval*/
     usleep(inputs.max_arr_time*1000);
+
+    //printf("jkhdaskjhdkajshjkdsa %d\n", num_of_poeple_waiting);
+    //printf("\n");
+
+
     //printf("people wait: %d\n", num_of_poeple_waiting);
     if(num_of_poeple_waiting >= inputs.wait_room_cap){
 
         /** gets thread id*/
-        pid_t tid = gettid();
-        sem_wait(&sem);
+        tid10 = gettid();
+        //sem_wait(&sem);
         printf("Patient %d (Thread ID: %d): Leaving the clinic without checkup \n",persons1->num - inputs.num_of_med_prof, tid10);
-        sem_post(&sem);
-            while(1){}
+        //sem_post(&sem);
+            while(1){
+                //printf("\n");
+            }
         }
     else{
         enterWaitingRoom(persons1);
@@ -134,7 +165,11 @@ void leaving_no_checkUp(void *arg){
 }
 pid_t tid11;
 void enterWaitingRoom(void *arg){
+
+    sem_wait(&waiting);
     num_of_poeple_waiting ++;
+    sem_post(&waiting);
+
 
     /** sets up passed struct*/
     struct person *persons1 = (struct person*)arg;
@@ -165,7 +200,9 @@ pid_t tid12;
 void sitOnSofa(void *arg){
 
    /** updates number of people on sofa*/
+    sem_wait(&waiting);
     num_of_poeple_sofa++;
+    sem_post(&waiting);
 
     /** sets up passed struct*/
     struct person *persons1 = (struct person*)arg;
@@ -175,7 +212,7 @@ void sitOnSofa(void *arg){
     printf("Patient %d (Thread ID: %d): Sitting on a sofa in the waiting room \n", (persons1->num-persons1->num_of_doctor), tid12 );
 
     /** locks func*/
-    pthread_mutex_lock(&lock2);
+    //pthread_mutex_lock(&lock2);
 
     /** signal notify11 not broadcast  signals doc someone is ready*/
     pthread_cond_signal(&notify3);
@@ -187,8 +224,10 @@ void sitOnSofa(void *arg){
     /** unlock func and update vars and leave */
 
     pthread_mutex_unlock(&lock2);
+    sem_wait(&waiting);
     num_of_poeple_sofa --;
     num_of_poeple_waiting --;
+    sem_post(&waiting);
     getMedicalCheckup(persons1);
 }
 pid_t tid13;
