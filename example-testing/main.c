@@ -7,12 +7,6 @@
 #include <sys/time.h>
 #include "threadpool.h"
 
-sem_t sem;
-sem_t sem2;
-sem_t sem3;
-sem_t sem4;
-sem_t sem5;
-sem_t waiting;
 
 int num_of_poeple_waiting = 0;
 int num_of_poeple_sofa = 0;
@@ -20,17 +14,19 @@ int counter = 0;
 int check_up_time = 0;
 int MainDone = 0;
 
+int successfulCheckups = 0;
+int numOfPeopleThatLeft = 0;
+float averageWaitTimeForPat = 0;
+float averageWaitTimeForDoc = 0;
+
 int main(int argc, char **argv){
 
     /** semaphore init*/
     sem_init(&sem, 0, 1);
     sem_init(&sem2, 0, 2);
-
     sem_init(&sem3, 0, 1);
     sem_init(&sem4, 0, 1);
-
     sem_init(&waiting, 0, 1);
-
     sem_init(&sem5, 0, 2);
 
     /** struct to handle inputs*/
@@ -84,9 +80,6 @@ int main(int argc, char **argv){
 
     struct timeval stop, start;
 
-
-
-
     /** while less then 100 pat have went through the hospital
     needs to be changed to input struct pat size */
 
@@ -102,9 +95,6 @@ int main(int argc, char **argv){
         counter++;
     }
 
-    //printf("jkhdaskjhdkajshjkdsa %d\n", num_of_poeple_waiting);
-    //printf("\n");
-
 
     while(num_of_poeple_sofa != 0 && counter != inputs.num_of_pat + inputs.num_of_med_prof){
     }
@@ -119,6 +109,20 @@ int main(int argc, char **argv){
 
     printf("Total Time in Hos %lu s\n", ((stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec));
 
+    printf("\n");
+    printf("\n");
+    printf("\n");
+    printf("Statistical Summary: \n");
+    printf("=======================================================\n");
+    printf("\n");
+    printf("Number of successful checkups      : %d\n", successfulCheckups);
+    printf("Number of Patients that left       : %d\n", numOfPeopleThatLeft);
+    printf("Average wait time for patients     : %f\n", averageWaitTimeForPat);
+    printf("Average wait for Medical Profess   : %f\n", averageWaitTimeForDoc);
+    printf("\n");
+    printf("=======================================================\n");
+
+
     /** FREES pool*/
     assert(free_threadpool(pool1) == 0);
 
@@ -128,9 +132,6 @@ int main(int argc, char **argv){
 pid_t tid10;
 
 void leaving_no_checkUp(void *arg){
-    //struct person *persons1 = (struct person*)arg;
-    //printf("jkhdaskjhdkajshjkdsa %d\n", persons1->num - inputs.num_of_med_prof);
-    //printf("\n");
 
 
     /** gets thread id*/
@@ -145,13 +146,9 @@ void leaving_no_checkUp(void *arg){
     /**maximum arrival interval*/
     usleep(inputs.max_arr_time*1000);
 
-    //printf("jkhdaskjhdkajshjkdsa %d\n", num_of_poeple_waiting);
-    //printf("\n");
-
-
     //printf("people wait: %d\n", num_of_poeple_waiting);
     if(num_of_poeple_waiting >= inputs.wait_room_cap){
-
+        numOfPeopleThatLeft ++;
         /** gets thread id*/
         tid10 = gettid();
         //sem_wait(&sem);
@@ -415,6 +412,7 @@ void leaveClinic(void *arg){
     if(persons1->num > persons1->num_of_doctor-1){
         pthread_cond_wait(&notify6 ,&lock7);
         sem_wait(&sem);
+        successfulCheckups++;
         printf("Patient %d Leaving the clinic after receiving checkup\n", (persons1->num-persons1->num_of_doctor));
         sem_post(&sem);
         }
