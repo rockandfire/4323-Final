@@ -18,6 +18,7 @@ int successfulCheckups = 0;
 int numOfPeopleThatLeft = 0;
 float averageWaitTimeForPat = 0;
 float averageWaitTimeForDoc = 0;
+int doctCounter = 0;
 
 int main(int argc, char **argv){
 
@@ -74,7 +75,7 @@ int main(int argc, char **argv){
     /** add the doctors to the main functions
     args: pool struct, function, and the struct for the thread to be passed to keep track of vars*/
     for(int i = 0; i < inputs.num_of_med_prof; i++){
-        threadpool_add_job(pool1, &ForPatients, &persons[i]);
+        threadpool_add_job(pool1, &WaitForPatients, &persons[i]);
         counter++;
     }
 
@@ -107,7 +108,6 @@ int main(int argc, char **argv){
     usleep(inputs.max_arr_time*1000);
     printf("Done, now ending\n");
 
-    printf("Total Time in Hos %lu s\n", ((stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec));
 
     printf("\n");
     printf("\n");
@@ -117,8 +117,8 @@ int main(int argc, char **argv){
     printf("\n");
     printf("Number of successful checkups      : %d\n", successfulCheckups);
     printf("Number of Patients that left       : %d\n", numOfPeopleThatLeft);
-    printf("Average wait time for patients     : %f\n", averageWaitTimeForPat);
-    printf("Average wait for Medical Profess   : %f\n", averageWaitTimeForDoc);
+    printf("Average wait time for patients     : %fms\n", (averageWaitTimeForPat/successfulCheckups)/1000);
+    printf("Average wait for Medical Profess   : %fms\n", (averageWaitTimeForDoc/doctCounter)/1000);
     printf("\n");
     printf("=======================================================\n");
 
@@ -149,6 +149,7 @@ void leaving_no_checkUp(void *arg){
     //printf("people wait: %d\n", num_of_poeple_waiting);
     if(num_of_poeple_waiting >= inputs.wait_room_cap){
         numOfPeopleThatLeft ++;
+        persons1->made_it_through = 0;
         /** gets thread id*/
         tid10 = gettid();
         //sem_wait(&sem);
@@ -172,6 +173,12 @@ void enterWaitingRoom(void *arg){
 
     /** sets up passed struct*/
     struct person *persons1 = (struct person*)arg;
+
+    //gettimeofday(&stop, NULL);
+
+    gettimeofday(&(persons1->start), NULL);
+
+    //gettimeofday(&start, NULL);
 
     /** prints the patients number ( minues the amount of doctors or else it wouldn't start at 0)*/
     tid11 = gettid();
@@ -227,16 +234,21 @@ void sitOnSofa(void *arg){
     num_of_poeple_sofa --;
     num_of_poeple_waiting --;
     sem_post(&waiting);
+    gettimeofday(&(persons1->stop), NULL);
     getMedicalCheckup(persons1);
 }
 pid_t tid13;
-void ForPatients(void *arg){
+
+void WaitForPatients(void *arg){
 
     /** locks func*/
      pthread_mutex_lock(&lock3);
+     doctCounter++;
 
     /** makes passed struct printf needs to be one line*/
     struct person *persons1 = (struct person*)arg;
+    gettimeofday(&(persons1->start), NULL);
+
     tid13 = gettid();
     printf("Medical Professional %d (Thread ID: %d): Waiting for patient  \n", (persons1->num), tid13 );
 
@@ -249,7 +261,8 @@ void ForPatients(void *arg){
     if(MainDone != 1){
         /** unlocks and updates vars*/
         pthread_mutex_unlock(&lock3);
-
+        gettimeofday(&(persons1->stop), NULL);
+        averageWaitTimeForDoc += ((persons1->stop.tv_sec - persons1->start.tv_sec) * 1000000 + persons1->stop.tv_usec - persons1->start.tv_usec);
         getMedicalCheckup(persons1);
     }
     pthread_mutex_unlock(&lock3);
@@ -413,13 +426,15 @@ void leaveClinic(void *arg){
         pthread_cond_wait(&notify6 ,&lock7);
         sem_wait(&sem);
         successfulCheckups++;
+        persons1->made_it_through = 1;
+        averageWaitTimeForPat += ((persons1->stop.tv_sec - persons1->start.tv_sec) * 1000000 + persons1->stop.tv_usec - persons1->start.tv_usec);
         printf("Patient %d Leaving the clinic after receiving checkup\n", (persons1->num-persons1->num_of_doctor));
         sem_post(&sem);
         }
     else{
         /** doctor go back to start*/
         pthread_mutex_unlock(&lock7);
-        ForPatients(persons1);
+        WaitForPatients(persons1);
     }
 
     /** unlock for pat to finish*/
