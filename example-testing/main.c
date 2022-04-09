@@ -49,7 +49,7 @@ int main(int argc, char **argv){
         inputs.max_arr_time = 10;
         inputs.pat_check_time = 100;
     }
-
+        inputs.num_of_pat = 50;
     /** struct to be passed around with threads*/
     struct person persons[120];
 
@@ -70,7 +70,7 @@ int main(int argc, char **argv){
     /** thread pool struct creation
     Args: thread size, queue size(not used) */
     struct threadpool_struct *pool1;
-    assert((pool1 = make_threadpool(inputs.num_of_pat+inputs.num_of_med_prof+2, inputs.num_of_pat = 50)) != NULL);
+    assert((pool1 = make_threadpool(inputs.num_of_pat+inputs.num_of_med_prof+2, inputs.num_of_pat)) != NULL);
 
     /** add the doctors to the main functions
     args: pool struct, function, and the struct for the thread to be passed to keep track of vars*/
