@@ -2,7 +2,7 @@
 #define _THREADPOOL_H_
 
 
-typedef struct threadpool_t threadpool_t;
+typedef struct threadpool_struct threadpool_struct;
 
 
 pthread_mutex_t lock;
@@ -36,8 +36,8 @@ struct person{
 
 typedef struct {
     void (*function)(void *);
-    struct person *argument;
-} threadpool_task_t;
+    struct person *args;
+} threadpool_jobs;
 
 
 void ForPatients(void *arg);
@@ -62,25 +62,24 @@ struct input {
 
 struct input inputs;
 
-struct threadpool_t {
+struct threadpool_struct {
   pthread_mutex_t lock;
   pthread_cond_t notify;
   pthread_t *threads;
-  threadpool_task_t *queue;
-  int queue_size;
-  int head;
-  int tail;
-  int count;
+  threadpool_jobs *queue;
+  int size_of_queue;
+  int first;
+  int last;
+  int counter;
 };
 
 void* threadpool_thread(void *threadpool);
-struct threadpool_t *threadpool_create(int thread_count, int queue_size);
-int threadpool_add(threadpool_t *pool, void (*routine)(void *),struct person *persons1);
-int threadpool_destroy(threadpool_t *pool);
+struct threadpool_struct *make_threadpool(int num_of_threads, int size_of_queue);
+int threadpool_add_job(threadpool_struct *pool, void (*function)(void *),struct person *persons1);
+int free_threadpool(threadpool_struct *pool);
 
 
 #endif
-
 
 
 
