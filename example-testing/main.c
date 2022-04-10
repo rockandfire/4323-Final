@@ -4,32 +4,31 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <semaphore.h>
-
+#include <sys/time.h>
 #include "threadpool.h"
 
-sem_t sem;
-sem_t sem2;
-sem_t sem3;
-sem_t sem4;
-
-sem_t waiting;
 
 int num_of_poeple_waiting = 0;
 int num_of_poeple_sofa = 0;
-int count = 0;
+int counter = 0;
 int check_up_time = 0;
 int MainDone = 0;
+
+int successfulCheckups = 0;
+int numOfPeopleThatLeft = 0;
+float averageWaitTimeForPat = 0;
+float averageWaitTimeForDoc = 0;
+int doctCounter = 0;
 
 int main(int argc, char **argv){
 
     /** semaphore init*/
     sem_init(&sem, 0, 1);
     sem_init(&sem2, 0, 2);
-
     sem_init(&sem3, 0, 1);
     sem_init(&sem4, 0, 1);
-
     sem_init(&waiting, 0, 1);
+    sem_init(&sem5, 0, 2);
 
     /** struct to handle inputs*/
     if (argc == 7){
@@ -43,14 +42,14 @@ int main(int argc, char **argv){
         inputs.pat_check_time   = atoi(argv[6]);
     }
     else{
-        inputs.num_of_med_prof = 2;
+        inputs.num_of_med_prof = 4;
         inputs.num_of_pat = 50;
         inputs.wait_room_cap = 5;
         inputs.num_of_sofa = 3;
         inputs.max_arr_time = 10;
         inputs.pat_check_time = 100;
     }
-
+        inputs.num_of_pat = 50;
     /** struct to be passed around with threads*/
     struct person persons[120];
 
@@ -70,41 +69,35 @@ int main(int argc, char **argv){
 
     /** thread pool struct creation
     Args: thread size, queue size(not used) */
-    tpool_t *pool1;
-    assert((pool1 = create_pool(inputs.num_of_pat+inputs.num_of_med_prof+2, inputs.num_of_pat = 50)) != NULL);
+    struct threadpool_struct *pool1;
+    assert((pool1 = make_threadpool(inputs.num_of_pat+inputs.num_of_med_prof+2, inputs.num_of_pat)) != NULL);
 
     /** add the doctors to the main functions
     args: pool struct, function, and the struct for the thread to be passed to keep track of vars*/
     for(int i = 0; i < inputs.num_of_med_prof; i++){
-        pool_new_task(pool1, &ForPatients, &persons[i]);
-        count++;
+        threadpool_add_job(pool1, &WaitForPatients, &persons[i]);
+        counter++;
     }
 
     struct timeval stop, start;
-
-
-
 
     /** while less then 100 pat have went through the hospital
     needs to be changed to input struct pat size */
 
     gettimeofday(&start, NULL);
 
-    while(count <= inputs.num_of_pat + inputs.num_of_med_prof){
+    while(counter <= inputs.num_of_pat + inputs.num_of_med_prof){
 
         /** delay counter for people coming and waiting at door */
         usleep(inputs.max_arr_time*1000);
 
-        /** adds next person to waitingroom with their struct (struct tells them what num person they are)*/
-        pool_new_task(pool1, &leaving_no_checkUp, &persons[count]);
-        count++;
-        }
-
-    //printf("jkhdaskjhdkajshjkdsa %d\n", num_of_poeple_waiting);
-    //printf("\n");
+        /** adds counter1 person to waitingroom with their struct (struct tells them what num person they are)*/
+        threadpool_add_job(pool1, &leaving_no_checkUp, &persons[counter]);
+        counter++;
+    }
 
 
-    while(num_of_poeple_sofa != 0 && count != inputs.num_of_pat + inputs.num_of_med_prof){
+    while(num_of_poeple_sofa != 0 && counter != inputs.num_of_pat + inputs.num_of_med_prof){
     }
 
     gettimeofday(&stop, NULL);
@@ -115,10 +108,23 @@ int main(int argc, char **argv){
     usleep(inputs.max_arr_time*1000);
     printf("Done, now ending\n");
 
-    printf("Total Time in Hos %lu s\n", ((stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec));
+
+    printf("\n");
+    printf("\n");
+    printf("\n");
+    printf("Statistical Summary: \n");
+    printf("=======================================================\n");
+    printf("\n");
+    printf("Number of successful checkups      : %d\n", successfulCheckups);
+    printf("Number of Patients that left       : %d\n", numOfPeopleThatLeft);
+    printf("Average wait time for patients     : %fms\n", (averageWaitTimeForPat/successfulCheckups)/1000);
+    printf("Average wait for Medical Profess   : %fms\n", (averageWaitTimeForDoc/doctCounter)/1000);
+    printf("\n");
+    printf("=======================================================\n");
+
 
     /** FREES pool*/
-    free(pool1);
+    assert(free_threadpool(pool1) == 0);
 
     return 0;
 }
@@ -126,9 +132,6 @@ int main(int argc, char **argv){
 pid_t tid10;
 
 void leaving_no_checkUp(void *arg){
-    //struct person *persons1 = (struct person*)arg;
-    //printf("jkhdaskjhdkajshjkdsa %d\n", persons1->num - inputs.num_of_med_prof);
-    //printf("\n");
 
 
     /** gets thread id*/
@@ -143,13 +146,10 @@ void leaving_no_checkUp(void *arg){
     /**maximum arrival interval*/
     usleep(inputs.max_arr_time*1000);
 
-    //printf("jkhdaskjhdkajshjkdsa %d\n", num_of_poeple_waiting);
-    //printf("\n");
-
-
     //printf("people wait: %d\n", num_of_poeple_waiting);
     if(num_of_poeple_waiting >= inputs.wait_room_cap){
-
+        numOfPeopleThatLeft ++;
+        persons1->made_it_through = 0;
         /** gets thread id*/
         tid10 = gettid();
         //sem_wait(&sem);
@@ -174,9 +174,15 @@ void enterWaitingRoom(void *arg){
     /** sets up passed struct*/
     struct person *persons1 = (struct person*)arg;
 
+    //gettimeofday(&stop, NULL);
+
+    gettimeofday(&(persons1->start), NULL);
+
+    //gettimeofday(&start, NULL);
+
     /** prints the patients number ( minues the amount of doctors or else it wouldn't start at 0)*/
     tid11 = gettid();
-    printf("Patient %d (Thread ID: %d): Entering the clinic\n", (persons1->num-persons1->num_of_doctor),tid11);
+    printf("Patient %d (Thread ID: %d): Arriving the clinic\n", (persons1->num-persons1->num_of_doctor),tid11);
 
     /**locks function*/
     pthread_mutex_lock(&lock1);
@@ -192,7 +198,7 @@ void enterWaitingRoom(void *arg){
     /** unlock function*/
     pthread_mutex_unlock(&lock1);
 
-    /** go to next function*/
+    /** go to counter1 function*/
     sitOnSofa(persons1);
 
 }
@@ -228,16 +234,21 @@ void sitOnSofa(void *arg){
     num_of_poeple_sofa --;
     num_of_poeple_waiting --;
     sem_post(&waiting);
+    gettimeofday(&(persons1->stop), NULL);
     getMedicalCheckup(persons1);
 }
 pid_t tid13;
-void ForPatients(void *arg){
+
+void WaitForPatients(void *arg){
 
     /** locks func*/
      pthread_mutex_lock(&lock3);
+     doctCounter++;
 
     /** makes passed struct printf needs to be one line*/
     struct person *persons1 = (struct person*)arg;
+    gettimeofday(&(persons1->start), NULL);
+
     tid13 = gettid();
     printf("Medical Professional %d (Thread ID: %d): Waiting for patient  \n", (persons1->num), tid13 );
 
@@ -250,7 +261,8 @@ void ForPatients(void *arg){
     if(MainDone != 1){
         /** unlocks and updates vars*/
         pthread_mutex_unlock(&lock3);
-
+        gettimeofday(&(persons1->stop), NULL);
+        averageWaitTimeForDoc += ((persons1->stop.tv_sec - persons1->start.tv_sec) * 1000000 + persons1->stop.tv_usec - persons1->start.tv_usec);
         getMedicalCheckup(persons1);
     }
     pthread_mutex_unlock(&lock3);
@@ -285,7 +297,7 @@ void getMedicalCheckup(void *arg){
         sem_post(&sem);
     }
 
-    /**unlocks and locks back to keep next function safe*/
+    /**unlocks and locks back to keep counter1 function safe*/
     pthread_mutex_unlock(&lock4);
    // pthread_mutex_lock(&lock5);
     perfromMedicalCheckup(persons1);
@@ -305,7 +317,7 @@ void perfromMedicalCheckup(void *arg){
     }
 
     usleep(inputs.pat_check_time*1000);
-    /**unlocks and locks back to keep next function safe*/
+    /**unlocks and locks back to keep counter1 function safe*/
     makePayment(persons1);
 }
 
@@ -316,7 +328,7 @@ pid_t tid2;
 int dochere = 0;
 
 pthread_mutex_t lock7;
-pthread_cond_t notify9;
+
 
 
 pthread_mutex_t lock10;
@@ -326,7 +338,7 @@ pthread_mutex_t lock11;
 pthread_cond_t notify11;
 
 int patsnumber = 5555;
-int yourdocfound = 0;
+
 int wait = 0;
 int workAroundRealpatNumber2print = 0;
 
@@ -347,38 +359,19 @@ void makePayment(void *arg){
         pthread_cond_wait(&notify10 ,&lock10);
         pthread_mutex_unlock(&lock10);
         wait = 0;
+
         sem_post(&sem3);
-
-
     }
     /** if your a doctor enter here*/
     else{
-
-
-        while(workAroundRealpatNumber2 != persons1->num){
-
-        }
-        while(wait ==0){
-
-        }
-
-        yourdocfound ==1;
-
+        while(workAroundRealpatNumber2 != persons1->num){}
+        while(wait ==0){}
         workAroundRealDocNumber2=persons1->num;
-
         printf("Patient %d (Thread ID: %d): Making Payment to Medical Professional %d \n", (workAroundRealpatNumber2print), tid2, workAroundRealDocNumber2);
         pthread_cond_signal(&notify10);
-        pthread_cond_signal(&notify7);
-         pthread_cond_signal(&notify9);
-
-         yourdocfound =0 ;
-
-
     }
 
-    /**unlocks and locks back to keep next function safe*/
-
-     pthread_mutex_lock(&lock7);
+    //pthread_mutex_lock(&lock7);
     acceptPayment(persons1);
 }
 
@@ -402,7 +395,7 @@ void acceptPayment(void *arg){
          pthread_cond_wait(&notify8 ,&lock7);
         sem_wait(&sem);
 
-        /** notify next print*/
+        /** notify counter1 print*/
         workAroundRealpatNumber = persons1->num-persons1->num_of_doctor;
         pthread_cond_signal(&notify5);
     }
@@ -414,7 +407,7 @@ void acceptPayment(void *arg){
         workAroundRealDocNumber=persons1->num;
         tid1 = gettid();
         printf("Medical Professional %d (Thread ID: %d): Accepting Payment from Patient %d \n", (workAroundRealDocNumber), tid1, workAroundRealpatNumber);
-        /** notify next print*/
+        /** notify counter1 print*/
         pthread_cond_signal(&notify6);
         sem_post(&sem);
     }
@@ -432,13 +425,16 @@ void leaveClinic(void *arg){
     if(persons1->num > persons1->num_of_doctor-1){
         pthread_cond_wait(&notify6 ,&lock7);
         sem_wait(&sem);
+        successfulCheckups++;
+        persons1->made_it_through = 1;
+        averageWaitTimeForPat += ((persons1->stop.tv_sec - persons1->start.tv_sec) * 1000000 + persons1->stop.tv_usec - persons1->start.tv_usec);
         printf("Patient %d Leaving the clinic after receiving checkup\n", (persons1->num-persons1->num_of_doctor));
         sem_post(&sem);
         }
     else{
         /** doctor go back to start*/
         pthread_mutex_unlock(&lock7);
-        ForPatients(persons1);
+        WaitForPatients(persons1);
     }
 
     /** unlock for pat to finish*/
