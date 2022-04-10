@@ -1,8 +1,8 @@
 #ifndef _THREADPOOL_H_
 #define _THREADPOOL_H_
-#include <semaphore.h>
 
-typedef struct threadpool_struct threadpool_struct;
+
+typedef struct threadpool_t threadpool_t;
 
 
 pthread_mutex_t lock;
@@ -22,13 +22,6 @@ pthread_cond_t notify5;
 pthread_cond_t notify6;
 pthread_cond_t notify7;
 
-sem_t sem;
-sem_t sem2;
-sem_t sem3;
-sem_t sem4;
-sem_t sem5;
-sem_t waiting;
-
 struct person{
     int num;
     int done;
@@ -38,17 +31,34 @@ struct person{
     int paired_tid;
     int pat_num;
     int seeing_doc_num;
-    int made_it_through;
-    struct timeval stop, start;
+
 };
 
 typedef struct {
     void (*function)(void *);
-    struct person *args;
-} threadpool_jobs;
+    struct person *argument;
+} threadpool_task_t;
 
+typedef struct
+{
+    void (*function) (void*);
+    struct person *arg;
+} tpool_task_t;
 
-void WaitForPatients(void *arg);
+typedef struct
+{
+  pthread_mutex_t lock;
+  pthread_cond_t notify;
+  pthread_mutex_t task_mut;
+  pthread_cond_t new_task;
+  pthread_t *thread_arr;
+  tpool_task_t *task_arr;
+  int task_add_pos;
+  int task_count;
+  int current_task_pos;
+} tpool_t;
+
+void ForPatients(void *arg);
 void enterWaitingRoom(void *arg);
 void sitOnSofa(void *arg);
 void getMedicalCheckup(void *arg);
@@ -58,6 +68,11 @@ void perfromMedicalCheckup(void *arg);
 void acceptPayment(void *arg);
 void leaving_no_checkUp(void *arg);
 void docleave(void *arg);
+void *keep_thread(void *in_pool);
+void pool_new_task(tpool_t *in_pool, void (*function) (void*), struct person *in_person); //add new task to thread pool
+int end_pool(tpool_t *in_pool);
+tpool_t *create_pool(int thread_count, int task_count);
+
 
 struct input {
   int num_of_med_prof;
@@ -70,24 +85,25 @@ struct input {
 
 struct input inputs;
 
-struct threadpool_struct {
+struct threadpool_t {
   pthread_mutex_t lock;
   pthread_cond_t notify;
   pthread_t *threads;
-  threadpool_jobs *queue;
-  int size_of_queue;
-  int first;
-  int last;
-  int counter;
+  threadpool_task_t *queue;
+  int queue_size;
+  int head;
+  int tail;
+  int count;
 };
 
 void* threadpool_thread(void *threadpool);
-struct threadpool_struct *make_threadpool(int num_of_threads, int size_of_queue);
-int threadpool_add_job(threadpool_struct *pool, void (*function)(void *),struct person *persons1);
-int free_threadpool(threadpool_struct *pool);
+struct threadpool_t *threadpool_create(int thread_count, int queue_size);
+int threadpool_add(threadpool_t *pool, void (*routine)(void *),struct person *persons1);
+int threadpool_destroy(threadpool_t *pool);
 
 
 #endif
+
 
 
 
