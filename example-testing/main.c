@@ -21,8 +21,9 @@ int num_of_poeple_sofa = 0;
 int count = 0;
 int check_up_time = 0;
 int MainDone = 0;
+int standing_line = 0;
 
-struct timeval now, start, stop;
+struct timeval now, start, stop, enter;
 
 int main(int argc, char **argv){
 
@@ -119,7 +120,7 @@ int main(int argc, char **argv){
     usleep(inputs.max_arr_time*1000);
     printf("Done, now ending\n");
 
-    printf("Total Time in Hos %lu s\n", ((stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec));
+    printf("Total Time in Hospital %lu s\n", ((stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec));
 
     /** FREES pool*/
     free(pool1);
@@ -141,7 +142,8 @@ void leaving_no_checkUp(void *arg){
     /** sets up passed struct*/
     struct person *persons1 = (struct person*)arg;
     //sem_wait(&sem);
-    printf("Patient %d (Thread ID: %d): Arriving the clinic \n",persons1->num - inputs.num_of_med_prof, tid10);
+    gettimeofday(&now, NULL);
+    printf("Patient %d \t\t(Thread ID: %d): Arriving the clinic \t\t\t %lu\n",persons1->num - inputs.num_of_med_prof, tid10,(now.tv_sec*1000000+now.tv_usec));
     //sem_post(&sem);
 
     /**maximum arrival interval*/
@@ -157,7 +159,8 @@ void leaving_no_checkUp(void *arg){
         /** gets thread id*/
         tid10 = gettid();
         //sem_wait(&sem);
-        printf("Patient %d (Thread ID: %d): Leaving the clinic without checkup \n",persons1->num - inputs.num_of_med_prof, tid10);
+        gettimeofday(&now, NULL);
+        printf("Patient %d \t\t(Thread ID: %d): Leaving the clinic without checkup \t %lu\n",persons1->num - inputs.num_of_med_prof, tid10,(now.tv_sec*1000000+now.tv_usec));
         //sem_post(&sem);
             while(1){
                 //printf("\n");
@@ -180,26 +183,35 @@ void enterWaitingRoom(void *arg){
 
     /** prints the patients number ( minues the amount of doctors or else it wouldn't start at 0)*/
     tid11 = gettid();
-    printf("Patient %d (Thread ID: %d): Entering the clinic\n", (persons1->num-persons1->num_of_doctor),tid11);
+    gettimeofday(&enter, NULL);
+    long t;
+    t = enter.tv_sec*1000000 + enter.tv_usec;
+    printf("Patient %d \t\t(Thread ID: %d): Entering the clinic \t\t\t %lu\n", (persons1->num-persons1->num_of_doctor),tid11, t);
 
     /**locks function*/
     pthread_mutex_lock(&lock1);
-
-    /**while there is no room on sofa wait until notified*/
-    int x = 0;
-    while(num_of_poeple_sofa >= persons1->num_of_sofa){
-        if(x == 0){
-            printf("Patient %d (Thread ID: %d): Standing in the waiting room\n",(persons1->num-persons1->num_of_doctor),tid11);
-            x = x+1;
-        }        
-        pthread_cond_wait(&notify1 ,&lock1);
-    }
-
     /** broadcast notify1 */
     pthread_cond_broadcast(&notify1);
 
     /** unlock function*/
     pthread_mutex_unlock(&lock1);
+    while(num_of_poeple_waiting-1 > num_of_poeple_sofa && num_of_poeple_sofa != persons1->num_of_sofa);
+
+    
+
+    /**while there is no room on sofa wait until notified*/
+    int x = 0;
+    while(num_of_poeple_sofa >= persons1->num_of_sofa){
+        if(x == 0){
+            gettimeofday(&now, NULL);
+            printf("Patient %d \t\t(Thread ID: %d): Standing in the waiting room \t\t %lu\n",(persons1->num-persons1->num_of_doctor),tid11,(now.tv_sec*1000000+now.tv_usec));
+            x++;
+        }        
+        
+        pthread_cond_wait(&notify1 ,&lock1);
+    }
+
+    
 
     /** go to next function*/
     sitOnSofa(persons1);
@@ -218,7 +230,8 @@ void sitOnSofa(void *arg){
 
      /** prints the patients number, get thread id*/
     tid12 = gettid();
-    printf("Patient %d (Thread ID: %d): Sitting on a sofa in the waiting room \n", (persons1->num-persons1->num_of_doctor), tid12 );
+    gettimeofday(&now, NULL);
+    printf("Patient %d \t\t(Thread ID: %d): Sitting on a sofa in the waiting room \t %lu\n", (persons1->num-persons1->num_of_doctor), tid12, (now.tv_sec*1000000+now.tv_usec));
 
     /** locks func*/
     //pthread_mutex_lock(&lock2);
@@ -248,7 +261,8 @@ void ForPatients(void *arg){
     /** makes passed struct printf needs to be one line*/
     struct person *persons1 = (struct person*)arg;
     tid13 = gettid();
-    printf("Medical Professional %d (Thread ID: %d): Waiting for patient  \n", (persons1->num), tid13 );
+    gettimeofday(&now, NULL);
+    printf("Medical Professional %d \t(Thread ID: %d): Waiting for patient \t\t\t %lu\n", (persons1->num), tid13, (now.tv_sec*1000000+now.tv_usec));
 
     /** waits for pat*/
     if(num_of_poeple_sofa==0){
@@ -290,7 +304,8 @@ void getMedicalCheckup(void *arg){
         workAroundRealpatNumber3 = persons1->num-persons1->num_of_doctor;
 
         persons1->seeing_doc_num = workAroundRealDocNumber3;
-        printf("Medical Professional %d (Thread ID: %d): Checking Patient %d \n", (workAroundRealDocNumber3), tid3, workAroundRealpatNumber3);
+        gettimeofday(&now, NULL);
+        printf("Medical Professional %d \t(Thread ID: %d): Checking Patient %d \t\t\t %lu\n", (workAroundRealDocNumber3), tid3, workAroundRealpatNumber3, (now.tv_sec*1000000+now.tv_usec));
         sem_post(&sem);
     }
 
@@ -307,7 +322,8 @@ void perfromMedicalCheckup(void *arg){
     /** if your a patient enter if loop*/
     if(persons1->num > persons1->num_of_doctor-1){
         tid14 = gettid();
-        printf("Patient %d (Thread ID: %d):  Getting checkup \n", (persons1->num-persons1->num_of_doctor), tid14);
+        gettimeofday(&now, NULL);
+        printf("Patient %d \t\t(Thread ID: %d): Getting checkup \t\t\t\t %lu\n", (persons1->num-persons1->num_of_doctor), tid14, (now.tv_sec*1000000+now.tv_usec));
     }
     else{
 
@@ -374,8 +390,8 @@ void makePayment(void *arg){
         yourdocfound ==1;
 
         workAroundRealDocNumber2=persons1->num;
-
-        printf("Patient %d (Thread ID: %d): Making Payment to Medical Professional %d \n", (workAroundRealpatNumber2print), tid2, workAroundRealDocNumber2);
+        gettimeofday(&now, NULL);
+        printf("Patient %d \t\t(Thread ID: %d): Making Payment to Medical Professional %d \t %lu\n", (workAroundRealpatNumber2print), tid2, workAroundRealDocNumber2, (now.tv_sec*1000000+now.tv_usec));
         pthread_cond_signal(&notify10);
         pthread_cond_signal(&notify7);
          pthread_cond_signal(&notify9);
@@ -422,7 +438,8 @@ void acceptPayment(void *arg){
 
         workAroundRealDocNumber=persons1->num;
         tid1 = gettid();
-        printf("Medical Professional %d (Thread ID: %d): Accepting Payment from Patient %d \n", (workAroundRealDocNumber), tid1, workAroundRealpatNumber);
+        gettimeofday(&now, NULL);
+        printf("Medical Professional %d \t(Thread ID: %d): Accepting Payment from Patient %d\t\t %lu\n", (workAroundRealDocNumber), tid1, workAroundRealpatNumber, (now.tv_sec*1000000+now.tv_usec));
         /** notify next print*/
         pthread_cond_signal(&notify6);
         sem_post(&sem);
@@ -432,7 +449,7 @@ void acceptPayment(void *arg){
     pthread_mutex_lock(&lock7);;
     leaveClinic(persons1);
 }
-
+pid_t tid15;
 void leaveClinic(void *arg){
 
     struct person *persons1 = (struct person*)arg;
@@ -441,7 +458,9 @@ void leaveClinic(void *arg){
     if(persons1->num > persons1->num_of_doctor-1){
         pthread_cond_wait(&notify6 ,&lock7);
         sem_wait(&sem);
-        printf("Patient %d Leaving the clinic after receiving checkup\n", (persons1->num-persons1->num_of_doctor));
+        tid15 = gettid();
+        gettimeofday(&now, NULL);
+        printf("Patient %d \t\t(Thread ID: %d): Leaving the clinic after receiving checkup %lu\n", (persons1->num-persons1->num_of_doctor),tid15, (now.tv_sec*1000000+now.tv_usec));
         sem_post(&sem);
         }
     else{
