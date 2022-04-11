@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <semaphore.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #include "threadpool.h"
 
@@ -19,6 +21,8 @@ int num_of_poeple_sofa = 0;
 int count = 0;
 int check_up_time = 0;
 int MainDone = 0;
+
+struct timeval now, start, stop;
 
 int main(int argc, char **argv){
 
@@ -80,7 +84,7 @@ int main(int argc, char **argv){
         count++;
     }
 
-    struct timeval stop, start;
+    //struct timeval stop, start;
 
 
 
@@ -182,7 +186,12 @@ void enterWaitingRoom(void *arg){
     pthread_mutex_lock(&lock1);
 
     /**while there is no room on sofa wait until notified*/
+    int x = 0;
     while(num_of_poeple_sofa >= persons1->num_of_sofa){
+        if(x == 0){
+            printf("Patient %d (Thread ID: %d): Standing in the waiting room\n",(persons1->num-persons1->num_of_doctor),tid11);
+            x = x+1;
+        }        
         pthread_cond_wait(&notify1 ,&lock1);
     }
 
