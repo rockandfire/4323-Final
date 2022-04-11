@@ -1,24 +1,19 @@
-#include <stdio.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <semaphore.h>
-#include <sys/time.h>
+//jackson stuff
+
 #include "threadpool.h"
 
-pid_t tid10;
+pid_t tid_patient;
 
 void leaving_no_checkUp(void *arg){
 
 
     /** gets thread id*/
-    tid10 = gettid();
+    tid_patient = gettid();
 
     /** sets up passed struct*/
-    struct person *persons1 = (struct person*)arg;
+    struct person *patient = (struct person*)arg;
     //sem_wait(&sem);
-    printf("Patient %d (Thread ID: %d): Arriving the clinic \n",persons1->num - inputs.num_of_med_prof, tid10);
+    printf("Patient %d (Thread ID: %d): Arriving the clinic \n",patient->num - inputs.num_of_med_prof, tid_patient);
     //sem_post(&sem);
 
     /**maximum arrival interval*/
@@ -27,46 +22,46 @@ void leaving_no_checkUp(void *arg){
     //printf("people wait: %d\n", num_of_poeple_waiting);
     if(num_of_poeple_waiting >= inputs.wait_room_cap){
         numOfPeopleThatLeft ++;
-        persons1->made_it_through = 0;
+        patient->made_it_through = 0;
         /** gets thread id*/
-        tid10 = gettid();
+        tid_patient = gettid();
         //sem_wait(&sem);
-        printf("Patient %d (Thread ID: %d): Leaving the clinic without checkup \n",persons1->num - inputs.num_of_med_prof, tid10);
+        printf("Patient %d (Thread ID: %d): Leaving the clinic without checkup \n",patient->num - inputs.num_of_med_prof, tid_patient);
         //sem_post(&sem);
             while(1){
                 //printf("\n");
             }
         }
     else{
-        enterWaitingRoom(persons1);
+        enterWaitingRoom(patient);
     }
 }
 
 void leaveClinic(void *arg){
 
-    struct person *persons1 = (struct person*)arg;
+    struct person *patient = (struct person*)arg;
 
     /** if pat enter*/
-    if(persons1->num > persons1->num_of_doctor-1){
+    if(patient->num > patient->num_of_doctor-1){
         pthread_cond_wait(&notify6 ,&lock7);
         sem_wait(&sem);
         successfulCheckups++;
-        persons1->made_it_through = 1;
-        averageWaitTimeForPat += ((persons1->stop.tv_sec - persons1->start.tv_sec) * 1000000 + persons1->stop.tv_usec - persons1->start.tv_usec);
-        printf("Patient %d Leaving the clinic after receiving checkup\n", (persons1->num-persons1->num_of_doctor));
+        patient->made_it_through = 1;
+        averageWaitTimeForPat += ((patient->stop.tv_sec - patient->start.tv_sec) * 1000000 + patient->stop.tv_usec - patient->start.tv_usec);
+        printf("Patient %d Leaving the clinic after receiving checkup\n", (patient->num - patient->num_of_doctor));
         sem_post(&sem);
         }
     else{
         /** doctor go back to start*/
         pthread_mutex_unlock(&lock7);
-        WaitForPatients(persons1);
+        WaitForPatients(patient);
     }
 
     /** unlock for pat to finish*/
     pthread_mutex_unlock(&lock7);
 }
 
-pid_t tid13;
+pid_t tid_doctor;
 
 void WaitForPatients(void *arg){
 
@@ -75,11 +70,11 @@ void WaitForPatients(void *arg){
      doctCounter++;
 
     /** makes passed struct printf needs to be one line*/
-    struct person *persons1 = (struct person*)arg;
-    gettimeofday(&(persons1->start), NULL);
+    struct person *doctor = (struct person*)arg;
+    gettimeofday(&(doctor->start), NULL);
 
-    tid13 = gettid();
-    printf("Medical Professional %d (Thread ID: %d): Waiting for patient  \n", (persons1->num), tid13 );
+    tid_doctor = gettid();
+    printf("Medical Professional %d (Thread ID: %d): Waiting for patient  \n", (doctor->num), tid_doctor);
 
     /** waits for pat*/
     if(num_of_poeple_sofa==0){
@@ -90,9 +85,9 @@ void WaitForPatients(void *arg){
     if(MainDone != 1){
         /** unlocks and updates vars*/
         pthread_mutex_unlock(&lock3);
-        gettimeofday(&(persons1->stop), NULL);
-        averageWaitTimeForDoc += ((persons1->stop.tv_sec - persons1->start.tv_sec) * 1000000 + persons1->stop.tv_usec - persons1->start.tv_usec);
-        getMedicalCheckup(persons1);
+        gettimeofday(&(doctor->stop), NULL);
+        averageWaitTimeForDoc += ((doctor->stop.tv_sec - doctor->start.tv_sec) * 1000000 + doctor->stop.tv_usec - doctor->start.tv_usec);
+        getMedicalCheckup(doctor);
     }
     pthread_mutex_unlock(&lock3);
 }

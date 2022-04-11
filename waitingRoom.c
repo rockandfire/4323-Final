@@ -1,10 +1,5 @@
-#include <stdio.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <semaphore.h>
-#include <sys/time.h>
+//josh stuff
+
 #include "threadpool.h"
 
 pid_t tid11;
