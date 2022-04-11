@@ -22,6 +22,7 @@ int count = 0;
 int check_up_time = 0;
 int MainDone = 0;
 int standing_line = 0;
+int stand = 0;
 
 struct timeval now, start, stop, enter;
 
@@ -76,7 +77,7 @@ int main(int argc, char **argv){
     /** thread pool struct creation
     Args: thread size, queue size(not used) */
     tpool_t *pool1;
-    assert((pool1 = create_pool(inputs.num_of_pat+inputs.num_of_med_prof+2, inputs.num_of_pat = 50)) != NULL);
+    assert((pool1 = create_pool(inputs.num_of_pat+inputs.num_of_med_prof+2, inputs.num_of_pat)) != NULL);
 
     /** add the doctors to the main functions
     args: pool struct, function, and the struct for the thread to be passed to keep track of vars*/
@@ -201,16 +202,17 @@ void enterWaitingRoom(void *arg){
     /**while there is no room on sofa wait until notified*/
     int x = 0;
     int y = 1;
-    while(num_of_poeple_sofa >= persons1->num_of_sofa || standing_line == y){
+    while(num_of_poeple_sofa >= persons1->num_of_sofa || y > 1 + stand){
         if(x == 0){
             gettimeofday(&now, NULL);
             printf("Patient %d \t\t(Thread ID: %d): Standing in the waiting room \t\t %lu\n",(persons1->num-persons1->num_of_doctor),tid11,(now.tv_sec*1000000+now.tv_usec));
             x++;
             standing_line++;
-            y = standing_line;
+            y = standing_line+persons1->num_of_sofa+persons1->num_of_doctor;
         }
         pthread_cond_wait(&notify1 ,&lock1);
     }
+    stand++;
 
     
 
