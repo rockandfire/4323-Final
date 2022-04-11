@@ -85,12 +85,15 @@ extern int num_of_poeple_sofa;
 extern int counter;
 extern int check_up_time;
 
+
 extern int successfulCheckups;
 extern int numOfPeopleThatLeft;
 extern float averageWaitTimeForPat;
 extern float averageWaitTimeForDoc;
 extern int doctCounter;
 extern int wait;
+extern int standing_line;
+extern int stand;
 struct input inputs;
 
 void WaitForPatients(void *arg);

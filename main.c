@@ -11,6 +11,8 @@ int numOfPeopleThatLeft = 0;
 float averageWaitTimeForPat = 0;
 float averageWaitTimeForDoc = 0;
 int doctCounter = 0;
+int standing_line = 0;
+int stand = 0;
 
 pthread_mutex_t lock;
 pthread_mutex_t lock1;
