@@ -55,6 +55,7 @@ int main(int argc, char **argv){
         inputs.max_arr_time = 10;
         inputs.pat_check_time = 100;
     }
+    pf
 
     /** struct to be passed around with threads*/
     struct person persons[120];
