@@ -13,6 +13,8 @@ int num_of_poeple_sofa = 0;
 int counter = 0;
 int check_up_time = 0;
 int MainDone = 0;
+int standing_line = 0;
+int stand = 0;
 
 int successfulCheckups = 0;
 int numOfPeopleThatLeft = 0;
@@ -186,17 +188,29 @@ void enterWaitingRoom(void *arg){
 
     /**locks function*/
     pthread_mutex_lock(&lock1);
-
-    /**while there is no room on sofa wait until notified*/
-    while(num_of_poeple_sofa >= persons1->num_of_sofa){
-        pthread_cond_wait(&notify1 ,&lock1);
-    }
-
     /** broadcast notify1 */
-    pthread_cond_broadcast(&notify1);
+    pthread_cond_broadcast(&notify1);//needs to be moved out of enter
 
     /** unlock function*/
-    pthread_mutex_unlock(&lock1);
+    pthread_mutex_unlock(&lock1);//needs to be moved like above
+
+    while(num_of_poeple_waiting-1 > num_of_poeple_sofa && num_of_poeple_sofa != persons1->num_of_sofa);
+
+    /**while there is no room on sofa wait until notified*/
+    int x = 0;
+    int y = 1;
+    while(num_of_poeple_sofa >= persons1->num_of_sofa || y > 1 + stand){
+        if(x == 0){
+            printf("Patient %d \t\t(Thread ID: %d): Standing in the waiting room\n",(persons1->num-persons1->num_of_doctor),tid11);
+            x++;
+            standing_line++;
+            y = standing_line+persons1->num_of_sofa+persons1->num_of_doctor;
+        }
+        pthread_cond_wait(&notify1 ,&lock1);
+    }
+    stand++;
+
+    
 
     /** go to counter1 function*/
     sitOnSofa(persons1);
