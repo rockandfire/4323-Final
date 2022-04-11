@@ -195,19 +195,20 @@ void enterWaitingRoom(void *arg){
 
     /** unlock function*/
     pthread_mutex_unlock(&lock1);
-    while(num_of_poeple_waiting-1 > num_of_poeple_sofa && num_of_poeple_sofa != persons1->num_of_sofa);
+    while(num_of_poeple_waiting-1 > num_of_poeple_sofa && num_of_poeple_sofa != persons1->num_of_sofa){
+    };
 
     /**while there is no room on sofa wait until notified*/
     int x = 0;
-    int y;
-    while(num_of_poeple_sofa >= persons1->num_of_sofa || standing_line > y+1){
+    int y = 1;
+    while(num_of_poeple_sofa >= persons1->num_of_sofa || standing_line == y){
         if(x == 0){
             gettimeofday(&now, NULL);
             printf("Patient %d \t\t(Thread ID: %d): Standing in the waiting room \t\t %lu\n",(persons1->num-persons1->num_of_doctor),tid11,(now.tv_sec*1000000+now.tv_usec));
             x++;
             standing_line++;
             y = standing_line;
-        }      
+        }
         pthread_cond_wait(&notify1 ,&lock1);
     }
 
