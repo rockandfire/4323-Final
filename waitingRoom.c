@@ -21,7 +21,7 @@ void enterWaitingRoom(void *arg){
 
     /** prints the patients number ( minues the amount of doctors or else it wouldn't start at 0)*/
     tid11 = gettid();
-    printf("Patient %d (Thread ID: %d): Arriving the clinic\n", (persons1->num-persons1->num_of_doctor),tid11);
+    printf("Patient %d (Thread ID: %d): Entering the clinic\n", (persons1->num-persons1->num_of_doctor),tid11);
 
     /**locks function*/
     pthread_mutex_lock(&lock1);
