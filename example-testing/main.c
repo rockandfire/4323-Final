@@ -69,13 +69,13 @@ int main(int argc, char **argv){
 
     /** thread pool struct creation
     Args: thread size, queue size(not used) */
-    struct threadpool_struct *pool1;
-    assert((pool1 = make_threadpool(inputs.num_of_pat+inputs.num_of_med_prof+2, inputs.num_of_pat)) != NULL);
+    tpool_t *pool1;
+    assert((pool1 = create_pool(inputs.num_of_pat+inputs.num_of_med_prof+2, inputs.num_of_pat)) != NULL);
 
     /** add the doctors to the main functions
     args: pool struct, function, and the struct for the thread to be passed to keep track of vars*/
     for(int i = 0; i < inputs.num_of_med_prof; i++){
-        threadpool_add_job(pool1, &WaitForPatients, &persons[i]);
+        pool_new_task(pool1, &WaitForPatients, &persons[i]);
         counter++;
     }
 
@@ -92,7 +92,7 @@ int main(int argc, char **argv){
         usleep(inputs.max_arr_time*1000);
 
         /** adds counter1 person to waitingroom with their struct (struct tells them what num person they are)*/
-        threadpool_add_job(pool1, &leaving_no_checkUp, &persons[counter]);
+        pool_new_task(pool1, &leaving_no_checkUp, &persons[counter]);
         counter++;
     }
 
@@ -124,7 +124,7 @@ int main(int argc, char **argv){
 
 
     /** FREES pool*/
-    assert(free_threadpool(pool1) == 0);
+    free(pool1);
 
     return 0;
 }
