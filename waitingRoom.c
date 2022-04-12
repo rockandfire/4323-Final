@@ -31,12 +31,15 @@ void enterWaitingRoom(void *arg){
 
     /** unlock function*/
     pthread_mutex_unlock(&lock1);
+    
+    /** while loop to keep people who just entered into the room from cutting in line**/
+    while(num_of_poeple_waiting-1 > num_of_poeple_sofa && num_of_poeple_sofa != persons1->num_of_sofa){
+    };
 
     /**while there is no room on sofa wait until notified*/
     int x = 0;
     int y = 1;
-    while(num_of_poeple_sofa >= persons1->num_of_sofa || y > 1+stand)
-    {
+    while(num_of_poeple_sofa >= persons1->num_of_sofa || y > 1+stand){
         if(x == 0){
             printf("Patient %d (Thread ID: %d): Standing in the waiting room\n",(persons1->num-persons1->num_of_doctor),tid11);
             x++;
