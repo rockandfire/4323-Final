@@ -43,8 +43,8 @@ void enterWaitingRoom(void *arg){
         if(x == 0){
             printf("Patient %d (Thread ID: %d): Standing in the waiting room\n",(persons1->num-persons1->num_of_doctor),tid11);
             x++;
-            standing_line++;
-            y = standing_line+persons1->num_of_sofa+persons1->num_of_doctor;
+            standing_line = num_of_poeple_waiting - num_of_poeple_sofa;
+            y = standing_line+stand;
         }
         pthread_cond_wait(&notify1 ,&lock1);
     }
