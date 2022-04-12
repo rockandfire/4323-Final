@@ -19,13 +19,9 @@ struct person{
     int pat_num;
     int seeing_doc_num;
     int made_it_through;
+    int p_type;
     struct timeval stop, start;
 };
-
-typedef struct {
-    void (*function)(void *);
-    struct person *argument;
-} threadpool_task_t;
 
 typedef struct
 {
@@ -45,6 +41,17 @@ typedef struct
   int task_count;
   int current_task_pos;
 } tpool_t;
+
+typedef struct {
+    void (*function)(void *);
+    struct person *argument;
+} threadpool_task_t;
+
+typedef struct
+{
+  tpool_t *in_pool;
+  struct person *thread_person;
+} thread_arg;
 
 struct input {
   int num_of_med_prof;
@@ -96,7 +103,7 @@ extern int standing_line;
 extern int stand;
 struct input inputs;
 
-void WaitForPatients(void *arg);
+void waitForPatients(void *arg);
 void enterWaitingRoom(void *arg);
 void sitOnSofa(void *arg);
 void getMedicalCheckup(void *arg);
@@ -104,7 +111,7 @@ void makePayment(void *arg);
 void leaveClinic(void *arg);
 void perfromMedicalCheckup(void *arg);
 void acceptPayment(void *arg);
-void leaving_no_checkUp(void *arg);
+void leaveOrEnter(void *arg);
 void docleave(void *arg);
 void *keep_thread(void *in_pool);
 void pool_new_task(tpool_t *in_pool, void (*function) (void*), struct person *in_person); //add new task to thread pool
