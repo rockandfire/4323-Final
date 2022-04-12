@@ -48,6 +48,7 @@ void enterWaitingRoom(void *arg){
         }
         pthread_cond_wait(&notify1 ,&lock1);
     }
+    stand++;
 
     /** go to counter1 function*/
     sitOnSofa(persons1);
