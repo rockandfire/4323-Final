@@ -109,7 +109,7 @@ void sitOnSofa(void *arg);
 void getMedicalCheckup(void *arg);
 void makePayment(void *arg);
 void leaveClinic(void *arg);
-void performMedicalCheckup(void *arg);
+void perfromMedicalCheckup(void *arg);
 void acceptPayment(void *arg);
 void leaveOrEnter(void *arg);
 void docleave(void *arg);
