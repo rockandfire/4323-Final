@@ -2,12 +2,12 @@
 
 #include "threadpool.h"
 
-pid_t tid11;
+
 void enterWaitingRoom(void *arg){
 
-    sem_wait(&waiting);
-    num_of_poeple_waiting ++;
-    sem_post(&waiting);
+    sem_wait(&SEM_WAITING_ROOM);
+    num_of_people_waiting ++;
+    sem_post(&SEM_WAITING_ROOM);
 
 
     /** sets up passed struct*/
@@ -20,73 +20,61 @@ void enterWaitingRoom(void *arg){
     //gettimeofday(&start, NULL);
 
     /** prints the patients number ( minues the amount of doctors or else it wouldn't start at 0)*/
-    tid11 = gettid();
-    printf("Patient %d (Thread ID: %d): Entering the clinic\n", (persons1->num-persons1->num_of_doctor),tid11);
+    printf("Patient %d (Thread ID: %d): Entering the clinic\n", (persons1->num-persons1->num_of_doctor), gettid());
 
     /**locks function*/
-    pthread_mutex_lock(&lock1);
+    pthread_mutex_lock(&NEW_ENTRY);
 
-    /** broadcast notify1 */
-    pthread_cond_broadcast(&notify1);
+    standing_queue.times[standing_queue.end] = persons1->start;
+    standing_queue.end++;
 
-    /** unlock function*/
-    pthread_mutex_unlock(&lock1);
-    
-    /** while loop to keep people who just entered into the room from cutting in line**/
-    while(num_of_poeple_waiting-1 > num_of_poeple_sofa && num_of_poeple_sofa != persons1->num_of_sofa){
-    };
+    pthread_mutex_unlock(&NEW_ENTRY);
 
-    /**while there is no room on sofa wait until notified*/
-    int x = 0;
-    int y = 1;
-    while(num_of_poeple_sofa >= persons1->num_of_sofa || y > 1+stand){
-        if(x == 0){
-            printf("Patient %d (Thread ID: %d): Standing in the waiting room\n",(persons1->num-persons1->num_of_doctor),tid11);
-            x++;
-            standing_line = num_of_poeple_waiting - num_of_poeple_sofa;
-            y = standing_line+stand;
-        }
-        pthread_cond_wait(&notify1 ,&lock1);
+    while (num_of_people_sofa == persons1->num_of_sofa && (standing_queue.times[standing_queue.current].tv_sec != persons1->start.tv_sec))
+    {
+        pthread_cond_wait(&SOFA_OPEN, &NEW_ENTRY);
     }
-    stand++;
 
+    pthread_mutex_lock(&NEW_ENTRY);
+    standing_queue.current++;
+    pthread_mutex_unlock(&NEW_ENTRY);
     /** go to counter1 function*/
     sitOnSofa(persons1);
 
 }
 
-pid_t tid12;
 void sitOnSofa(void *arg){
 
    /** updates number of people on sofa*/
-    sem_wait(&waiting);
-    num_of_poeple_sofa++;
-    sem_post(&waiting);
+    sem_wait(&SEM_WAITING_ROOM);
+    num_of_people_sofa++;
+    sem_post(&SEM_WAITING_ROOM);
 
     /** sets up passed struct*/
     struct person *persons1 = (struct person*)arg;
 
      /** prints the patients number, get thread id*/
-    tid12 = gettid();
-    printf("Patient %d (Thread ID: %d): Sitting on a sofa in the waiting room \n", (persons1->num-persons1->num_of_doctor), tid12 );
+    printf("Patient %d (Thread ID: %d): Sitting on a sofa in the waiting room \n", (persons1->num-persons1->num_of_doctor), gettid());
 
     /** locks func*/
-    //pthread_mutex_lock(&lock2);
+    //pthread_mutex_lock(&WAIT_FOR_DOC);
 
     /** signal notify11 not broadcast  signals doc someone is ready*/
-    pthread_cond_signal(&notify3);
+    pthread_cond_signal(&PATIENT_READY);
 
-    /** wait until notify2 goes off*/
-    pthread_cond_wait(&notify2 ,&lock2);
+    /** wait until DOCTOR_AVAILABLE goes off*/
+    pthread_cond_wait(&DOCTOR_AVAILABLE ,&WAIT_FOR_DOC);
 
 
     /** unlock func and update vars and leave */
 
-    pthread_mutex_unlock(&lock2);
-    sem_wait(&waiting);
-    num_of_poeple_sofa --;
-    num_of_poeple_waiting --;
-    sem_post(&waiting);
+    pthread_mutex_unlock(&WAIT_FOR_DOC);
+    sem_wait(&SEM_WAITING_ROOM);
+    num_of_people_sofa --;
+    num_of_people_waiting --;
+    sem_post(&SEM_WAITING_ROOM);
+
+    pthread_cond_signal(&SOFA_OPEN);
     gettimeofday(&(persons1->stop), NULL);
     getMedicalCheckup(persons1);
 }

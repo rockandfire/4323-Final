@@ -1,8 +1,8 @@
 #include "threadpool.h"
 
 
-int num_of_poeple_waiting = 0;
-int num_of_poeple_sofa = 0;
+int num_of_people_waiting = 0;
+int num_of_people_sofa = 0;
 int counter = 0;
 int check_up_time = 0;
 
@@ -14,41 +14,41 @@ int doctCounter = 0;
 int standing_line = 0;
 int stand = 0;
 
-pthread_mutex_t lock;
-pthread_mutex_t lock1;
-pthread_mutex_t lock2;
-pthread_mutex_t lock3;
-pthread_mutex_t lock4;
-pthread_mutex_t lock5;
-pthread_mutex_t lock6;
-pthread_mutex_t lock7;
+pthread_mutex_t WAIT_FOR_DOC;
+pthread_mutex_t WAIT_FOR_PATIENT;
+pthread_mutex_t GET_CHECKUP;
+pthread_mutex_t LEAVE_WAIT;
+pthread_mutex_t NEW_ENTRY;
+pthread_mutex_t DATA_ENTRY;
+pthread_mutex_t END;
+pthread_mutex_t LOCK_MAKE_PAYMENT;
 
-pthread_cond_t notify1;
-pthread_cond_t notify2;
-pthread_cond_t notify3;
-pthread_cond_t notify4;
-pthread_cond_t notify5;
-pthread_cond_t notify6;
-pthread_cond_t notify7;
+pthread_cond_t SOFA_OPEN;
+pthread_cond_t DOCTOR_AVAILABLE;
+pthread_cond_t PATIENT_READY;
+pthread_cond_t PAYMENT_COMPLETE;
+pthread_cond_t NOTIF_LEAVE_WAIT;
+pthread_cond_t NEW_TASK;
+pthread_cond_t ALL_DONE;
+pthread_cond_t PAYMENT_ACCEPTED;
+pthread_cond_t MAKING_PAYMENT;
 
-sem_t sem;
-sem_t sem2;
-sem_t sem3;
-sem_t sem4;
-sem_t sem5;
-sem_t waiting;
+sem_t SEM_LEAVE_CHECKUP;
+sem_t SEM_MAKE_PAYMENT;
+sem_t SEM_WAITING_ROOM;
+sem_t SEM_PAYMENT_ACCEPT;
+sem_t SEM_CHECKUP;
 
 int MainDone = 0;
 
 int main(int argc, char **argv){
 
     /** semaphore init*/
-    sem_init(&sem, 0, 1);
-    sem_init(&sem2, 0, 2);
-    sem_init(&sem3, 0, 1);
-    sem_init(&sem4, 0, 1);
-    sem_init(&waiting, 0, 1);
-    sem_init(&sem5, 0, 2);
+    sem_init(&SEM_LEAVE_CHECKUP, 0, 1);
+    sem_init(&SEM_MAKE_PAYMENT, 0, 1);
+    sem_init(&SEM_WAITING_ROOM, 0, 1);
+    sem_init(&SEM_PAYMENT_ACCEPT, 0, 1);
+    sem_init(&SEM_CHECKUP, 0, 1);
 
     /** struct to handle inputs*/
     if (argc == 7){
@@ -64,17 +64,17 @@ int main(int argc, char **argv){
     else{
         inputs.num_of_med_prof = 4;
         inputs.num_of_pat = 50;
-        inputs.wait_room_cap = 5;
-        inputs.num_of_sofa = 3;
+        inputs.wait_room_cap = 4;
+        inputs.num_of_sofa = 1;
         inputs.max_arr_time = 10;
         inputs.pat_check_time = 100;
     }
-        inputs.num_of_pat = 50;
+        inputs.num_of_pat = 40;
     /** struct to be passed around with threads*/
-    struct person persons[120];
+    struct person persons[inputs.num_of_med_prof + inputs.num_of_pat];
 
     /** initializes struct*/
-    for (int i =0; i<120; i++){
+    for (int i =0; i<=inputs.num_of_med_prof + inputs.num_of_pat; i++){
         persons[i].num = i;
         persons[i].done = 1;
         persons[i].num_of_pat_left = inputs.num_of_pat;
@@ -85,18 +85,31 @@ int main(int argc, char **argv){
     check_up_time = inputs.pat_check_time;
 
     /** mutex init*/
-    pthread_mutex_init(&lock, NULL);
+
+    standing_queue.times = malloc(inputs.num_of_pat * sizeof(int));
+    standing_queue.current = 0;
+    standing_queue.end = 0;
 
     /** thread pool struct creation
     Args: thread size, queue size(not used) */
     tpool_t *pool1;
-    assert((pool1 = create_pool(inputs.num_of_med_prof + inputs.num_of_pat + 2, inputs.num_of_pat)) != NULL);
+    pool1 = malloc(sizeof(tpool_t));
+    pool1->thread_arr = malloc(inputs.num_of_med_prof + inputs.num_of_pat + 2 * sizeof(pthread_t));
+    pool1->task_arr = malloc(inputs.num_of_pat * sizeof(tpool_task_t));
+    pool1->task_count = 0;
+    pool1->task_add_pos = 0;
+    pool1->current_task_pos = 0;
+    assert((pool1 = create_pool(180, inputs.num_of_pat)) != NULL);
 
     /** add the doctors to the main functions
     args: pool struct, function, and the struct for the thread to be passed to keep track of vars*/
     for(int i = 0; i < inputs.num_of_med_prof; i++){
-        pool_new_task(pool1, &waitForPatients, &persons[i]);
+        pool1->task_arr[pool1->task_add_pos].function = waitForPatients; //add new task to array
+        pool1->task_arr[pool1->task_add_pos].arg = &persons[i];
+        pool1->task_add_pos++; //update task array index and task count
+        pool1->task_count++;
         counter++;
+        pthread_cond_signal(&NEW_TASK);
     }
 
     struct timeval stop, start;
@@ -112,19 +125,26 @@ int main(int argc, char **argv){
         usleep(inputs.max_arr_time*1000);
 
         /** adds counter1 person to waitingroom with their struct (struct tells them what num person they are)*/
-        pool_new_task(pool1, &leaveOrEnter, &persons[counter]);
+        pool1->task_arr[pool1->task_add_pos].function = leaveOrEnter; //add new task to array
+        pool1->task_arr[pool1->task_add_pos].arg = &persons[counter];
+        pool1->task_add_pos++; //update task array index and task count
+        pool1->task_count++;
         counter++;
+        pthread_cond_signal(&NEW_TASK);
     }
 
-
-    while(num_of_poeple_sofa != 0 && counter != inputs.num_of_pat + inputs.num_of_med_prof){
+    //while(num_of_people_sofa != 0 && counter != inputs.num_of_pat){}
+    
+    while (inputs.num_of_pat > numOfPeopleThatLeft + successfulCheckups)
+    {
+        pthread_cond_wait(&ALL_DONE, &END);
     }
-
+    
     gettimeofday(&stop, NULL);
 
     MainDone = 1;
     usleep(150*1000);
-    pthread_cond_broadcast(&notify3);
+    //pthread_cond_broadcast(&PATIENT_READY);
     usleep(inputs.max_arr_time*1000);
     printf("Done, now ending\n");
 
@@ -148,28 +168,3 @@ int main(int argc, char **argv){
 
     return 0;
 }
-
-
-
-
-//int tid2 = 0;
-
-
-
-//int tid2 = 0;
-
-int dochere = 0;
-
-pthread_mutex_t lock7;
-
-
-
-
-
-pthread_mutex_t lock11;
-pthread_cond_t notify11;
-
-int patsnumber = 5555;
-
-
-

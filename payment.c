@@ -2,14 +2,10 @@
 
 #include "threadpool.h"
 
-pthread_mutex_t lock10;
-pthread_cond_t notify10;
 int wait = 0;
 int workAroundRealpatNumber2print = 0;
 int workAroundRealDocNumber2 = 0;
 int workAroundRealpatNumber2 = 55;
-
-pid_t tid2;
 
 void makePayment(void *arg){
 
@@ -18,38 +14,33 @@ void makePayment(void *arg){
     /** if your a patienit enter if loop*/
     if(persons1->num > persons1->num_of_doctor-1){
 
-        sem_wait(&sem3);
+        sem_wait(&SEM_MAKE_PAYMENT);
 
         workAroundRealpatNumber2 = persons1->seeing_doc_num;
         workAroundRealpatNumber2print = persons1->num-persons1->num_of_doctor;
-        tid2 = gettid();
 
         wait = 1;
-        pthread_cond_wait(&notify10 ,&lock10);
-        pthread_mutex_unlock(&lock10);
+        pthread_cond_wait(&MAKING_PAYMENT ,&LOCK_MAKE_PAYMENT);
+        pthread_mutex_unlock(&LOCK_MAKE_PAYMENT);
         wait = 0;
 
-        sem_post(&sem3);
+        sem_post(&SEM_MAKE_PAYMENT);
     }
     /** if your a doctor enter here*/
     else{
         while(workAroundRealpatNumber2 != persons1->num){}
-        while(wait ==0){}
+        while(wait == 0){}
         workAroundRealDocNumber2=persons1->num;
-        printf("Patient %d (Thread ID: %d): Making Payment to Medical Professional %d \n", (workAroundRealpatNumber2print), tid2, workAroundRealDocNumber2);
-        pthread_cond_signal(&notify10);
+        printf("Patient %d (Thread ID: %d): Making Payment to Medical Professional %d \n", (workAroundRealpatNumber2print), gettid(), workAroundRealDocNumber2);
+        pthread_cond_signal(&MAKING_PAYMENT);
     }
 
-    //pthread_mutex_lock(&lock7);
+    //pthread_mutex_lock(&LEAVE_WAIT);
     acceptPayment(persons1);
 }
 
-pthread_mutex_t lock7;
-pthread_cond_t notify8;
-
 int workAroundRealDocNumber = 0;
 int workAroundRealpatNumber = 0;
-int tid1 = 0;
 
 void acceptPayment(void *arg){
 
@@ -59,28 +50,26 @@ void acceptPayment(void *arg){
     if(persons1->num > persons1->num_of_doctor-1){
 
 
-        //tid1 = tid;
-         pthread_cond_wait(&notify8 ,&lock7);
-        sem_wait(&sem);
+        pthread_cond_wait(&PAYMENT_ACCEPTED ,&LEAVE_WAIT);
+        sem_wait(&SEM_PAYMENT_ACCEPT);
 
         /** notify counter1 print*/
         workAroundRealpatNumber = persons1->num-persons1->num_of_doctor;
-        pthread_cond_signal(&notify5);
+        pthread_cond_signal(&PAYMENT_COMPLETE);
     }
     else{
         /** wait to print*/
-        pthread_cond_signal(&notify8);
-        pthread_cond_wait(&notify5 ,&lock7);
+        pthread_cond_signal(&PAYMENT_ACCEPTED);
+        pthread_cond_wait(&PAYMENT_COMPLETE ,&LEAVE_WAIT);
 
         workAroundRealDocNumber=persons1->num;
-        tid1 = gettid();
-        printf("Medical Professional %d (Thread ID: %d): Accepting Payment from Patient %d \n", (workAroundRealDocNumber), tid1, workAroundRealpatNumber);
+        printf("Medical Professional %d (Thread ID: %d): Accepting Payment from Patient %d \n", (workAroundRealDocNumber), gettid(), workAroundRealpatNumber);
         /** notify counter1 print*/
-        pthread_cond_signal(&notify6);
-        sem_post(&sem);
+        pthread_cond_signal(&NOTIF_LEAVE_WAIT);
+        sem_post(&SEM_PAYMENT_ACCEPT);
     }
 
-    pthread_mutex_unlock(&lock7);
-    pthread_mutex_lock(&lock7);;
+    //pthread_mutex_unlock(&LEAVE_WAIT);
+    //pthread_mutex_lock(&LEAVE_WAIT);
     leaveClinic(persons1);
 }

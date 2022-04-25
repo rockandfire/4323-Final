@@ -34,7 +34,7 @@ void *keep_thread_alive(void *in_pool) //keep thread in loop to check for new ta
 
         while(temp_pool->task_count == 0) //wait for next task
         {
-            pthread_cond_wait(&temp_pool->new_task, &temp_pool->task_mut);
+            pthread_cond_wait(&NEW_TASK, &temp_pool->task_mut);
         }
 
         task.function = temp_pool->task_arr[temp_pool->current_task_pos].function; //assign next function call based on queue
@@ -44,16 +44,6 @@ void *keep_thread_alive(void *in_pool) //keep thread in loop to check for new ta
         pthread_mutex_unlock(&temp_pool->task_mut);
         (*(task.function))(task.arg); //call next function
     }
-}
-
-void pool_new_task(tpool_t *in_pool, void (*function) (void*), struct person *in_person) //add new task to thread pool
-{
-    tpool_t *temp_pool = (tpool_t*) in_pool;
-    temp_pool->task_arr[temp_pool->task_add_pos].function = function; //add new task to array
-    temp_pool->task_arr[temp_pool->task_add_pos].arg = in_person;
-    temp_pool->task_add_pos++; //update task array index and task count
-    temp_pool->task_count++;
-    pthread_cond_signal(&temp_pool->new_task); //notify threads of new task
 }
 
 tpool_t *create_pool(int thread_count, int task_count) //create threadpool
@@ -78,37 +68,50 @@ tpool_t *create_pool(int thread_count, int task_count) //create threadpool
 
 //NEW THREADPOOL IMPLEMENTATION WIP*****************************************************************************
 
-void *keep_thread_alive_new(void *in_thread_arg) //keep thread in loop to check for new task
+/*void *keep_thread_alive(void *in_thread_arg) //keep thread in loop to check for new task
 {
     thread_arg *temp_thread_arg = (thread_arg*) in_thread_arg;
     tpool_t *temp_pool = temp_thread_arg->in_pool;
     struct person *temp_person = temp_thread_arg->thread_person;
+    tpool_task_t task;
 
     //make a struct that has tpool and person to preserve pool mutex while also passing in the person array
     while(1)
     {
         pthread_mutex_lock(&temp_pool->task_mut);
 
-        while(temp_pool->current_task_pos >= temp_pool->task_count) //index == max index!!!!
+        while(current_task_pos >= inputs.num_of_med_prof + inputs.num_of_pat) //index == max index!!!!
         {
             pthread_cond_wait(&temp_pool->new_task, &temp_pool->task_mut);
         }
+        //temp_thread_arg->in_pool->current_task_pos++;
+        //temp_pool->current_task_pos++;
+        int person_pos = current_task_pos;
+        current_task_pos++;
+        printf("POSITION: %i\n", person_pos);
+        //printf("CURRENT: %i\n", current_task_pos);
+        //printf("current: %i", temp_pool);
 
-        temp_pool->current_task_pos++;
-        pthread_mutex_unlock(&temp_pool->task_mut);
-        
-        if ((temp_person[temp_pool->current_task_pos]).p_type == 0) //keep extern that iterates through arr, just an extern that does patients + docs
+        if ((temp_person[person_pos]).p_type == 0) //keep extern that iterates through arr, just an extern that does patients + docs
         {
-            waitForPatients((void*) &temp_person[temp_pool->current_task_pos]);
+            task.function = waitForPatients; //assign next function call based on queue
+            task.arg = (void*) &temp_person[person_pos];
+            //waitForPatients((void*) &temp_person[person_pos]);
         }
         else //keep extern that iterates through arr, just an extern that does patients + docs
         {
-            leaveOrEnter((void*) &temp_person[temp_pool->current_task_pos]);
+            usleep(inputs.max_arr_time*1000);
+            task.function = leaveOrEnter; //assign next function call based on queue
+            task.arg = (void*) &temp_person[person_pos];
+            //leaveOrEnter((void*) &temp_person[person_pos]);
         }
-    }
-}
 
-tpool_t *create_pool_new(int thread_count, int task_count, struct person *in_person) //largely the same as current implementation, but passes person array directly into keep alive instead
+        pthread_mutex_unlock(&temp_pool->task_mut);
+        (*(task.function))(task.arg);
+    }
+}*/
+
+/*tpool_t *create_pool(int thread_count, int task_count, struct person *in_person) //largely the same as current implementation, but passes person array directly into keep alive instead
 {
     tpool_t *in_pool; // init pool
     in_pool = malloc(sizeof(tpool_t));
@@ -116,7 +119,7 @@ tpool_t *create_pool_new(int thread_count, int task_count, struct person *in_per
     in_pool->task_arr = malloc(task_count * sizeof(tpool_task_t));
     in_pool->task_count = task_count;
     in_pool->task_add_pos = 0;
-    in_pool->current_task_pos = -1;
+    //in_pool->current_task_pos = -1;
 
     thread_arg *in_thread_arg; //use new thread_arg that
     in_thread_arg = malloc(sizeof(thread_arg));
@@ -129,6 +132,6 @@ tpool_t *create_pool_new(int thread_count, int task_count, struct person *in_per
     }
 
     return in_pool;
-}
+}*/
 
 //END NEW THREADPOOL IMPLEMENTATION WIP*************************************************************************

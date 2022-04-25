@@ -23,6 +23,13 @@ struct person{
     struct timeval stop, start;
 };
 
+struct pat_queue
+{
+  struct timeval *times;
+  int current;
+  int end;
+};
+
 typedef struct
 {
     void (*function) (void*);
@@ -62,36 +69,37 @@ struct input {
   int pat_check_time;
 };
 
-extern pthread_mutex_t lock;
-extern pthread_mutex_t lock1;
-extern pthread_mutex_t lock2;
-extern pthread_mutex_t lock3;
-extern pthread_mutex_t lock4;
-extern pthread_mutex_t lock5;
-extern pthread_mutex_t lock6;
-extern pthread_mutex_t lock7;
+extern pthread_mutex_t NEW_ENTRY;
+extern pthread_mutex_t WAIT_FOR_DOC;
+extern pthread_mutex_t WAIT_FOR_PATIENT;
+extern pthread_mutex_t GET_CHECKUP;
+extern pthread_mutex_t LEAVE_WAIT;
+extern pthread_mutex_t DATA_ENTRY;
+extern pthread_mutex_t END;
+extern pthread_mutex_t LOCK_MAKE_PAYMENT;
 
-extern pthread_cond_t notify1;
-extern pthread_cond_t notify2;
-extern pthread_cond_t notify3;
-extern pthread_cond_t notify4;
-extern pthread_cond_t notify5;
-extern pthread_cond_t notify6;
-extern pthread_cond_t notify7;
+extern pthread_cond_t SOFA_OPEN;
+extern pthread_cond_t DOCTOR_AVAILABLE;
+extern pthread_cond_t PATIENT_READY;
+extern pthread_cond_t PAYMENT_COMPLETE;
+extern pthread_cond_t NOTIF_LEAVE_WAIT;
+extern pthread_cond_t NEW_TASK;
+extern pthread_cond_t ALL_DONE;
+extern pthread_cond_t PAYMENT_ACCEPTED;
+extern pthread_cond_t MAKING_PAYMENT;
 
-extern sem_t sem;
-extern sem_t sem2;
-extern sem_t sem3;
-extern sem_t sem4;
-extern sem_t sem5;
-extern sem_t waiting;
+extern sem_t SEM_LEAVE_CHECKUP;
+extern sem_t SEM_MAKE_PAYMENT;
+extern sem_t SEM_WAITING_ROOM;
+extern sem_t SEM_PAYMENT_ACCEPT;
+extern sem_t SEM_CHECKUP;
 
 extern int MainDone;
-extern int num_of_poeple_waiting;
-extern int num_of_poeple_sofa;
+extern int num_of_people_waiting;
+extern int num_of_people_sofa;
 extern int counter;
 extern int check_up_time;
-
+extern int current_task_pos;
 
 extern int successfulCheckups;
 extern int numOfPeopleThatLeft;
@@ -102,6 +110,7 @@ extern int wait;
 extern int standing_line;
 extern int stand;
 struct input inputs;
+struct pat_queue standing_queue;
 
 void waitForPatients(void *arg);
 void enterWaitingRoom(void *arg);
@@ -113,7 +122,7 @@ void performMedicalCheckup(void *arg);
 void acceptPayment(void *arg);
 void leaveOrEnter(void *arg);
 void docleave(void *arg);
-void *keep_thread(void *in_pool);
+void *keep_thread_alive(void *in_pool);
 void pool_new_task(tpool_t *in_pool, void (*function) (void*), struct person *in_person); //add new task to thread pool
 int end_pool(tpool_t *in_pool);
 tpool_t *create_pool(int thread_count, int task_count);
