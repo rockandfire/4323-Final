@@ -8,7 +8,7 @@
 #include "threadpool.h"
 
 int workAroundRealDocNumber3 = 0;
-int workAroundRealpatNumber3 = 55;
+int workAroundRealpatNumber3 = 0;
 
 void getMedicalCheckup(void *arg){
     // Locks mutex

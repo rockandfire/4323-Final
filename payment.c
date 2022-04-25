@@ -7,10 +7,10 @@
 
 #include "threadpool.h"
 
-int wait = 0;
+int wait = 0; 
 int workAroundRealpatNumber2print = 0;
 int workAroundRealDocNumber2 = 0;
-int workAroundRealpatNumber2 = 55;
+int workAroundRealpatNumber2 = 0;
 
 void makePayment(void *arg){
 
@@ -40,7 +40,6 @@ void makePayment(void *arg){
         pthread_cond_signal(&MAKING_PAYMENT);
     }
 
-    //pthread_mutex_lock(&LEAVE_WAIT);
     acceptPayment(persons1);
 }
 

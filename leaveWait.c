@@ -11,17 +11,15 @@ void leaveOrEnter(void *arg) //decides whether a patient should leave without a 
 {
 
     struct person *patient = (struct person*)arg;
-    printf("Patient %d (Thread ID: %d): Arriving the clinic \n",patient->num - inputs.num_of_med_prof, gettid());
-    usleep(inputs.max_arr_time*1000); //arrival interval
+    printf("Patient %d (Thread ID: %d): Arriving at the clinic front door \n",patient->num - inputs.num_of_med_prof, gettid());
     
-    if(num_of_people_waiting >= inputs.wait_room_cap) //leave if no room
+    if(num_of_people_waiting >= inputs.wait_room_cap) //leave if no room in waiting room
     {  
-        pthread_mutex_lock(&DATA_ENTRY);
+        pthread_mutex_lock(&DATA_ENTRY); //ensure correct iteration of counter
         numOfPeopleThatLeft ++;
         pthread_mutex_unlock(&DATA_ENTRY);
-        patient->made_it_through = 0;
         printf("Patient %d (Thread ID: %d): Leaving the clinic without checkup \n",patient->num - inputs.num_of_med_prof, gettid());
-        pthread_cond_signal(&ALL_DONE);
+        pthread_cond_signal(&ALL_DONE); //allow main thread to check for finish condition
     }
     else //enter waiting room to find a sofa or stand
     {
@@ -37,10 +35,9 @@ void leaveClinic(void *arg) //leaves the clinic after a checkup
     if(temp_person->num > temp_person->num_of_doctor-1) //allow patient to leave clinic
     {
         pthread_cond_wait(&NOTIF_LEAVE_WAIT ,&LEAVE_WAIT); //wait until payment is complete
-        pthread_mutex_lock(&DATA_ENTRY);
+        pthread_mutex_lock(&DATA_ENTRY); //ensure correct iteration of counter
         successfulCheckups++;
         pthread_mutex_unlock(&DATA_ENTRY);
-        temp_person->made_it_through = 1;
         averageWaitTimeForPat += ((temp_person->stop.tv_sec - temp_person->start.tv_sec) * 1000000 + temp_person->stop.tv_usec - temp_person->start.tv_usec);
         printf("Patient %d Leaving the clinic after receiving checkup\n", (temp_person->num - temp_person->num_of_doctor));
         pthread_mutex_unlock(&LEAVE_WAIT); //allow patient to leave
@@ -65,7 +62,7 @@ void waitForPatients(void *arg) //medical professional begins waiting for a pati
 
     printf("Medical Professional %d (Thread ID: %d): Waiting for patient  \n", (doctor->num), gettid());
 
-    if(num_of_people_sofa == 0) //wait for patient
+    if(num_of_people_sofa == 0) //wait for next patient
     {
         pthread_cond_wait(&PATIENT_READY ,&WAIT_FOR_PATIENT);
     }
@@ -78,5 +75,5 @@ void waitForPatients(void *arg) //medical professional begins waiting for a pati
         getMedicalCheckup(doctor);
     }
 
-    pthread_mutex_unlock(&WAIT_FOR_PATIENT); //guarantee unlock for next doc
+    pthread_mutex_unlock(&WAIT_FOR_PATIENT); //guarantee unlock for next doc, prevents deadlock
 }
