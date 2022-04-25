@@ -1,4 +1,9 @@
-//josh stuff
+/**
+ * @file waitingRoom.c
+ * @author Josh Hardin (joshua.hardin@okstate.edu)
+ * @brief Group C
+ * @date 04/25/22
+ */
 
 #include "threadpool.h"
 

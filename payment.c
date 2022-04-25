@@ -1,4 +1,9 @@
-//sam stuff
+/**
+ * @file payment.c
+ * @author Samuel Fipps (sfipps@okstate.edu)
+ * @brief Group C
+ * @date 04/25/22
+ */
 
 #include "threadpool.h"
 
@@ -68,8 +73,6 @@ void acceptPayment(void *arg){
         pthread_cond_signal(&NOTIF_LEAVE_WAIT);
         sem_post(&SEM_PAYMENT_ACCEPT);
     }
-
-    //pthread_mutex_unlock(&LEAVE_WAIT);
-    //pthread_mutex_lock(&LEAVE_WAIT);
+    
     leaveClinic(persons1);
 }

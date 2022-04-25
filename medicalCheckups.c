@@ -1,4 +1,9 @@
-//cameron stuff
+/**
+ * @file medicalCheckups.c
+ * @author Cameron Stalcup (cameron.stalcup@okstate.edu)
+ * @brief Group C
+ * @date 04/25/22
+ */
 
 #include "threadpool.h"
 

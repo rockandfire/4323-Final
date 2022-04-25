@@ -1,11 +1,17 @@
+/**
+ * @file main.c
+ * @author Samuel Fipps (sfipps@okstate.edu)
+ * @brief Group C
+ * @date 04/25/22
+ */
+
 #include "threadpool.h"
 
 
-int num_of_people_waiting = 0;
+int num_of_people_waiting = 0; //init counters/statistics
 int num_of_people_sofa = 0;
 int counter = 0;
 int check_up_time = 0;
-
 int successfulCheckups = 0;
 int numOfPeopleThatLeft = 0;
 float averageWaitTimeForPat = 0;
@@ -14,7 +20,7 @@ int doctCounter = 0;
 int standing_line = 0;
 int stand = 0;
 
-pthread_mutex_t WAIT_FOR_DOC;
+pthread_mutex_t WAIT_FOR_DOC; //init all mutexes
 pthread_mutex_t WAIT_FOR_PATIENT;
 pthread_mutex_t GET_CHECKUP;
 pthread_mutex_t LEAVE_WAIT;
@@ -23,7 +29,7 @@ pthread_mutex_t DATA_ENTRY;
 pthread_mutex_t END;
 pthread_mutex_t LOCK_MAKE_PAYMENT;
 
-pthread_cond_t SOFA_OPEN;
+pthread_cond_t SOFA_OPEN; //init all conditions
 pthread_cond_t DOCTOR_AVAILABLE;
 pthread_cond_t PATIENT_READY;
 pthread_cond_t PAYMENT_COMPLETE;
@@ -33,7 +39,7 @@ pthread_cond_t ALL_DONE;
 pthread_cond_t PAYMENT_ACCEPTED;
 pthread_cond_t MAKING_PAYMENT;
 
-sem_t SEM_LEAVE_CHECKUP;
+sem_t SEM_LEAVE_CHECKUP; //init all semaphores
 sem_t SEM_MAKE_PAYMENT;
 sem_t SEM_WAITING_ROOM;
 sem_t SEM_PAYMENT_ACCEPT;
@@ -41,10 +47,10 @@ sem_t SEM_CHECKUP;
 
 int MainDone = 0;
 
-int main(int argc, char **argv){
+int main(int argc, char **argv){ //main method
 
     /** semaphore init*/
-    sem_init(&SEM_LEAVE_CHECKUP, 0, 1);
+    sem_init(&SEM_LEAVE_CHECKUP, 0, 1); //finish init semaphores
     sem_init(&SEM_MAKE_PAYMENT, 0, 1);
     sem_init(&SEM_WAITING_ROOM, 0, 1);
     sem_init(&SEM_PAYMENT_ACCEPT, 0, 1);
@@ -52,8 +58,6 @@ int main(int argc, char **argv){
 
     /** struct to handle inputs*/
     if (argc == 7){
-        //printf("Not enough args exiting");
-        //exit(0);
         inputs.num_of_med_prof  = atoi(argv[1]);
         inputs.num_of_pat       = atoi(argv[2]);
         inputs.wait_room_cap    = atoi(argv[3]);
@@ -62,6 +66,8 @@ int main(int argc, char **argv){
         inputs.pat_check_time   = atoi(argv[6]);
     }
     else{
+        //printf("Not enough args exiting");
+        //exit(0);
         inputs.num_of_med_prof = 4;
         inputs.num_of_pat = 50;
         inputs.wait_room_cap = 4;
@@ -132,10 +138,8 @@ int main(int argc, char **argv){
         counter++;
         pthread_cond_signal(&NEW_TASK);
     }
-
-    //while(num_of_people_sofa != 0 && counter != inputs.num_of_pat){}
     
-    while (inputs.num_of_pat > numOfPeopleThatLeft + successfulCheckups)
+    while (inputs.num_of_pat > numOfPeopleThatLeft + successfulCheckups) //make sure all patients leave
     {
         pthread_cond_wait(&ALL_DONE, &END);
     }
@@ -144,7 +148,6 @@ int main(int argc, char **argv){
 
     MainDone = 1;
     usleep(150*1000);
-    //pthread_cond_broadcast(&PATIENT_READY);
     usleep(inputs.max_arr_time*1000);
     printf("Done, now ending\n");
 
