@@ -54,7 +54,11 @@ void acceptPayment(void *arg){
     if(persons1->num > persons1->num_of_doctor-1){
 
 
-        pthread_cond_wait(&PAYMENT_ACCEPTED ,&LEAVE_WAIT);
+        if (inputs.num_of_pat < successfulCheckups + numOfPeopleThatLeft + 1)
+        {
+            pthread_cond_wait(&PAYMENT_ACCEPTED ,&LEAVE_WAIT);
+        }
+
         sem_wait(&SEM_PAYMENT_ACCEPT);
 
         /** notify counter1 print*/
@@ -64,6 +68,7 @@ void acceptPayment(void *arg){
     else{
         /** wait to print*/
         pthread_cond_signal(&PAYMENT_ACCEPTED);
+
         pthread_cond_wait(&PAYMENT_COMPLETE ,&LEAVE_WAIT);
 
         workAroundRealDocNumber=persons1->num;
