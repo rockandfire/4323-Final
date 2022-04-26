@@ -5,13 +5,6 @@
  * @date 04/25/22
  */
 
-/*
- * REFERENCED FROM: MATHIAS BROSSARD
- * Copyright (c) 2016, Mathias Brossard <mathias@brossard.org>.
- * All rights reserved.
- * https://github.com/mbrossard/threadpool
- */
-
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
