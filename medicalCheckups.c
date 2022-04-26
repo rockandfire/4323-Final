@@ -45,7 +45,7 @@ void performMedicalCheckup(void *arg){
     }
 
     // If person is a doctor
-    else{}
+    //else{}
 
     // Waits for amount of time specified on input
     usleep(inputs.pat_check_time*1000);

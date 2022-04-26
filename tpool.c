@@ -6,7 +6,7 @@
  */
 
 /*
- * REFERENCE: MATHIAS BROSSARD
+ * REFERENCED FROM: MATHIAS BROSSARD
  * Copyright (c) 2016, Mathias Brossard <mathias@brossard.org>.
  * All rights reserved.
  * https://github.com/mbrossard/threadpool

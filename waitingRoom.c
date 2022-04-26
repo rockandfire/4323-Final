@@ -30,23 +30,23 @@ void enterWaitingRoom(void *arg){
     /**locks function*/
     pthread_mutex_lock(&NEW_ENTRY);
 
-    standing_queue.times[standing_queue.end] = persons1->start;
+    standing_queue.times[standing_queue.end] = persons1->start; //update standing queue with new patient (adding all patients doesn't cause problems bc of the way current is iterated)
     standing_queue.end++;
 
     pthread_mutex_unlock(&NEW_ENTRY);
 
-    if (num_of_people_sofa == persons1->num_of_sofa)
-    {
+    if (num_of_people_sofa == persons1->num_of_sofa){ //just here to print standing stuff without messing with setting a var for the loop
+
         printf("Patient %d (Thread ID: %d): Standing in the waiting room\n", (persons1->num-persons1->num_of_doctor), gettid());
     }
 
-    while (num_of_people_sofa == persons1->num_of_sofa && (standing_queue.times[standing_queue.current].tv_sec != persons1->start.tv_sec))
-    {
+    while (num_of_people_sofa == persons1->num_of_sofa && (standing_queue.times[standing_queue.current].tv_sec != persons1->start.tv_sec)){ //prevent patients not at front of standing queue from sitting
+
         pthread_cond_wait(&SOFA_OPEN, &NEW_ENTRY);
     }
 
     pthread_mutex_lock(&NEW_ENTRY);
-    standing_queue.current++;
+    standing_queue.current++; //every time a patient makes it through, iterate. prevents patient queue from getting stuck waiting on a patient that's moved on
     pthread_mutex_unlock(&NEW_ENTRY);
     /** go to counter1 function*/
     sitOnSofa(persons1);

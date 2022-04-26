@@ -12,6 +12,7 @@ void leaveOrEnter(void *arg) //decides whether a patient should leave without a 
 
     struct person *patient = (struct person*)arg;
     printf("Patient %d (Thread ID: %d): Arriving at the clinic front door \n",patient->num - inputs.num_of_med_prof, gettid());
+    patient->tid = gettid();
     
     if(num_of_people_waiting >= inputs.wait_room_cap) //leave if no room in waiting room
     {  
@@ -58,6 +59,7 @@ void waitForPatients(void *arg) //medical professional begins waiting for a pati
 
     /** makes passed struct printf needs to be one line*/
     struct person *doctor = (struct person*)arg;
+    doctor->tid = gettid();
     gettimeofday(&(doctor->start), NULL);
 
     printf("Medical Professional %d (Thread ID: %d): Waiting for patient  \n", (doctor->num), gettid());

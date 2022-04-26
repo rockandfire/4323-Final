@@ -101,7 +101,7 @@ int main(int argc, char **argv){ //main method
     pool1->task_count = 0;
     pool1->task_add_pos = 0;
     pool1->current_task_pos = 0;
-    assert((pool1 = create_pool(180, inputs.num_of_pat)) != NULL);
+    assert((pool1 = create_pool(inputs.num_of_med_prof + 15, inputs.num_of_pat)) != NULL);
 
     /** add the doctors to the main functions
     args: pool struct, function, and the struct for the thread to be passed to keep track of vars*/
@@ -150,8 +150,8 @@ int main(int argc, char **argv){ //main method
     gettimeofday(&stop, NULL);
 
     MainDone = 1;
-    usleep(150*1000);
-    usleep(inputs.max_arr_time*1000);
+    //usleep(150*1000);
+    //usleep(inputs.max_arr_time*1000);
     printf("Done, now ending\n"); //start displaying final statistics
 
 

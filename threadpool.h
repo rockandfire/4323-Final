@@ -14,7 +14,7 @@ struct person{ //contains information relating to a patient/doctor, argument for
     int num;
     int num_of_doctor;
     int num_of_sofa;
-    int paired_tid;
+    int tid;
     int seeing_doc_num;
     struct timeval stop, start;
 };
