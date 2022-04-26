@@ -121,7 +121,7 @@ int main(int argc, char **argv){ //main method
 
     gettimeofday(&start, NULL);
 
-    while(counter <= inputs.num_of_pat + inputs.num_of_med_prof){ //begin allowing patients to arrive
+    while(counter < inputs.num_of_pat + inputs.num_of_med_prof){ //begin allowing patients to arrive
 
         /** delay counter for people coming and waiting at door */
         random_time = rand() % inputs.max_arr_time;
