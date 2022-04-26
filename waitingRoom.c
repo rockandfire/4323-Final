@@ -35,13 +35,13 @@ void enterWaitingRoom(void *arg){
 
     pthread_mutex_unlock(&NEW_ENTRY);
 
-    if (num_of_people_sofa > persons1->num_of_sofa){ //just here to print standing stuff without messing with setting a var for the loop
+    if (num_of_people_sofa == persons1->num_of_sofa){ //just here to print standing stuff without messing with setting a var for the loop
 
         printf("Patient %d (Thread ID: %d): Standing in the waiting room\n", (persons1->num-persons1->num_of_doctor), gettid());
     }
 
     
-    while (num_of_people_sofa > persons1->num_of_sofa && (standing_queue.times[standing_queue.current].tv_sec != persons1->start.tv_sec)){ //prevent patients not at front of standing queue from sitting
+    while (num_of_people_sofa == persons1->num_of_sofa && (standing_queue.times[standing_queue.current].tv_sec != persons1->start.tv_sec)){ //prevent patients not at front of standing queue from sitting
 
         pthread_cond_wait(&SOFA_OPEN, &NEW_ENTRY);
     }
